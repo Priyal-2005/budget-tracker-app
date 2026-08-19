@@ -1,0 +1,338 @@
+import { useEffect, useState } from 'react';
+import { Alert, Pressable, ScrollView, StyleSheet, TextInput, View } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
+
+import { Button } from '@/components/button';
+import { FormField } from '@/components/form-field';
+import { ThemedText } from '@/components/themed-text';
+import { ThemedView } from '@/components/themed-view';
+import { Spacing } from '@/constants/theme';
+import { useLogData } from '@/hooks/use-log-data';
+import { useMonthlySummary } from '@/hooks/use-monthly-summary';
+import { useTheme } from '@/hooks/use-theme';
+import { formatINR } from '@/lib/currency';
+import { CATEGORY_LABELS, type RecurringItem } from '@/types/database';
+
+type WeeklyState = Record<string, { checked: boolean; amount: string }>;
+
+export default function LogScreen() {
+  const { weeklyItems, monthlyItems, loggedMonthlyItemIds, error, logItems, logBufferSpend } = useLogData();
+  const { summary, refresh: refreshSummary } = useMonthlySummary();
+  const theme = useTheme();
+
+  const [weeklyState, setWeeklyState] = useState<WeeklyState>({});
+  const [isSubmittingWeekly, setIsSubmittingWeekly] = useState(false);
+
+  useEffect(() => {
+    setWeeklyState((prev) => {
+      const next = { ...prev };
+      for (const item of weeklyItems) {
+        if (!next[item.id]) next[item.id] = { checked: true, amount: String(item.default_amount) };
+      }
+      return next;
+    });
+  }, [weeklyItems]);
+
+  const handleLogWeek = async () => {
+    const entries = weeklyItems
+      .filter((item) => weeklyState[item.id]?.checked)
+      .map((item) => {
+        const amount = Number(weeklyState[item.id]?.amount);
+        return { recurring_item_id: item.id, amount, category: item.category };
+      })
+      .filter((entry) => !Number.isNaN(entry.amount) && entry.amount >= 0);
+
+    if (entries.length === 0) {
+      Alert.alert('Nothing selected', 'Check at least one item to log.');
+      return;
+    }
+    setIsSubmittingWeekly(true);
+    const { error: logError } = await logItems(entries);
+    setIsSubmittingWeekly(false);
+    if (logError) {
+      Alert.alert('Error', logError);
+    } else {
+      await refreshSummary();
+      Alert.alert('Logged', `Logged ${entries.length} item(s) for this week.`);
+    }
+  };
+
+  return (
+    <ThemedView style={styles.flex}>
+      <SafeAreaView style={styles.flex}>
+        <ScrollView contentContainerStyle={styles.container}>
+          <ThemedText type="title" style={styles.title}>
+            Log
+          </ThemedText>
+
+          {error && (
+            <ThemedText themeColor="danger" type="small">
+              {error}
+            </ThemedText>
+          )}
+
+          <BufferSpendCard bufferRemaining={summary?.bufferRemaining} onSubmit={logBufferSpend} onLogged={refreshSummary} />
+
+          <ThemedView style={styles.section}>
+            <ThemedText type="smallBold" themeColor="textSecondary">
+              THIS WEEK&apos;S BATCH
+            </ThemedText>
+            {weeklyItems.length === 0 ? (
+              <ThemedText themeColor="textSecondary" type="small">
+                No weekly items yet. Add some from the Items tab (milk, fruits, veggies…).
+              </ThemedText>
+            ) : (
+              weeklyItems.map((item) => (
+                <WeeklyItemRow
+                  key={item.id}
+                  item={item}
+                  state={weeklyState[item.id] ?? { checked: true, amount: String(item.default_amount) }}
+                  onChange={(next) => setWeeklyState((prev) => ({ ...prev, [item.id]: next }))}
+                />
+              ))
+            )}
+            {weeklyItems.length > 0 && (
+              <Button title="Log this week's batch" onPress={handleLogWeek} isLoading={isSubmittingWeekly} />
+            )}
+          </ThemedView>
+
+          <ThemedView style={styles.section}>
+            <ThemedText type="smallBold" themeColor="textSecondary">
+              THIS MONTH
+            </ThemedText>
+            {monthlyItems.length === 0 ? (
+              <ThemedText themeColor="textSecondary" type="small">
+                No monthly items yet. Add things like medicines or subscriptions from the Items tab.
+              </ThemedText>
+            ) : (
+              monthlyItems.map((item) => (
+                <MonthlyItemRow
+                  key={item.id}
+                  item={item}
+                  isLogged={loggedMonthlyItemIds.has(item.id)}
+                  onLog={async (amount) => {
+                    const { error: logError } = await logItems([
+                      { recurring_item_id: item.id, amount, category: item.category },
+                    ]);
+                    if (logError) Alert.alert('Error', logError);
+                    else await refreshSummary();
+                  }}
+                />
+              ))
+            )}
+          </ThemedView>
+        </ScrollView>
+      </SafeAreaView>
+    </ThemedView>
+  );
+}
+
+function WeeklyItemRow({
+  item,
+  state,
+  onChange,
+}: {
+  item: RecurringItem;
+  state: { checked: boolean; amount: string };
+  onChange: (next: { checked: boolean; amount: string }) => void;
+}) {
+  const theme = useTheme();
+  return (
+    <ThemedView style={styles.itemRow}>
+      <Pressable
+        onPress={() => onChange({ ...state, checked: !state.checked })}
+        style={[
+          styles.checkbox,
+          { borderColor: theme.border, backgroundColor: state.checked ? theme.primary : 'transparent' },
+        ]}>
+        {state.checked && <ThemedText style={{ color: '#ffffff', fontSize: 12 }}>✓</ThemedText>}
+      </Pressable>
+      <ThemedView style={styles.itemRowInfo}>
+        <ThemedText type="default">{item.name}</ThemedText>
+        <ThemedText themeColor="textSecondary" type="small">
+          {CATEGORY_LABELS[item.category]}
+        </ThemedText>
+      </ThemedView>
+      <TextInput
+        value={state.amount}
+        onChangeText={(amount) => onChange({ ...state, amount })}
+        keyboardType="decimal-pad"
+        editable={state.checked}
+        style={[
+          styles.amountInput,
+          { borderColor: theme.border, color: theme.text, opacity: state.checked ? 1 : 0.4 },
+        ]}
+      />
+    </ThemedView>
+  );
+}
+
+function MonthlyItemRow({
+  item,
+  isLogged,
+  onLog,
+}: {
+  item: RecurringItem;
+  isLogged: boolean;
+  onLog: (amount: number) => Promise<void>;
+}) {
+  const theme = useTheme();
+  const [editing, setEditing] = useState(false);
+  const [amount, setAmount] = useState(String(item.default_amount));
+  const [isSaving, setIsSaving] = useState(false);
+
+  const handleConfirm = async () => {
+    const parsed = Number(amount);
+    if (Number.isNaN(parsed) || parsed < 0) return;
+    setIsSaving(true);
+    await onLog(parsed);
+    setIsSaving(false);
+    setEditing(false);
+  };
+
+  return (
+    <ThemedView style={styles.monthlyRowContainer}>
+      <ThemedView style={styles.itemRow}>
+        <ThemedView style={styles.itemRowInfo}>
+          <ThemedText type="default">{item.name}</ThemedText>
+          <ThemedText themeColor="textSecondary" type="small">
+            {CATEGORY_LABELS[item.category]} · usually {formatINR(item.default_amount)}
+          </ThemedText>
+        </ThemedView>
+        {isLogged ? (
+          <ThemedText type="small" themeColor="success">
+            ✓ Logged
+          </ThemedText>
+        ) : editing ? null : (
+          <Pressable onPress={() => setEditing(true)}>
+            <ThemedText type="smallBold" themeColor="primary">
+              Log
+            </ThemedText>
+          </Pressable>
+        )}
+      </ThemedView>
+      {editing && !isLogged && (
+        <ThemedView style={styles.editRow}>
+          <TextInput
+            value={amount}
+            onChangeText={setAmount}
+            keyboardType="decimal-pad"
+            style={[styles.amountInput, { borderColor: theme.border, color: theme.text, flex: 1 }]}
+          />
+          <Button title="Cancel" variant="secondary" onPress={() => setEditing(false)} style={styles.smallButton} />
+          <Button title="Confirm" onPress={handleConfirm} isLoading={isSaving} style={styles.smallButton} />
+        </ThemedView>
+      )}
+    </ThemedView>
+  );
+}
+
+function BufferSpendCard({
+  bufferRemaining,
+  onSubmit,
+  onLogged,
+}: {
+  bufferRemaining: number | undefined;
+  onSubmit: (amount: number, note: string) => Promise<{ error: string | null }>;
+  onLogged: () => Promise<void>;
+}) {
+  const [amount, setAmount] = useState('');
+  const [note, setNote] = useState('');
+  const [isSaving, setIsSaving] = useState(false);
+
+  const handleSubmit = async () => {
+    const parsed = Number(amount);
+    if (!amount || Number.isNaN(parsed) || parsed <= 0) {
+      Alert.alert('Enter an amount', 'How much did you spend?');
+      return;
+    }
+    setIsSaving(true);
+    const { error } = await onSubmit(parsed, note);
+    setIsSaving(false);
+    if (error) {
+      Alert.alert('Error', error);
+    } else {
+      setAmount('');
+      setNote('');
+      await onLogged();
+    }
+  };
+
+  return (
+    <ThemedView type="backgroundElement" style={styles.bufferCard}>
+      <ThemedView style={styles.bufferHeader}>
+        <ThemedText type="smallBold">Buffer spend</ThemedText>
+        {bufferRemaining !== undefined && (
+          <ThemedText type="small" themeColor={bufferRemaining < 0 ? 'danger' : 'textSecondary'}>
+            {formatINR(bufferRemaining)} left
+          </ThemedText>
+        )}
+      </ThemedView>
+      <ThemedText themeColor="textSecondary" type="small">
+        Ice cream, Maggi, random cravings — log it here.
+      </ThemedText>
+      <View style={styles.bufferInputRow}>
+        <FormField
+          label=""
+          value={amount}
+          onChangeText={setAmount}
+          keyboardType="decimal-pad"
+          placeholder="₹ amount"
+          style={styles.bufferAmountInput}
+        />
+        <FormField label="" value={note} onChangeText={setNote} placeholder="What for? (optional)" style={styles.flex1} />
+      </View>
+      <Button title="Log buffer spend" onPress={handleSubmit} isLoading={isSaving} />
+    </ThemedView>
+  );
+}
+
+const styles = StyleSheet.create({
+  flex: { flex: 1 },
+  flex1: { flex: 1 },
+  container: { padding: Spacing.four, gap: Spacing.four, paddingBottom: Spacing.six },
+  title: { fontSize: 28, lineHeight: 34 },
+  section: { gap: Spacing.two },
+  itemRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: Spacing.two,
+    paddingVertical: Spacing.two,
+  },
+  itemRowInfo: { flex: 1, gap: 2 },
+  checkbox: {
+    width: 24,
+    height: 24,
+    borderRadius: 6,
+    borderWidth: 1.5,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  amountInput: {
+    borderWidth: 1,
+    borderRadius: Spacing.two,
+    paddingHorizontal: Spacing.two,
+    paddingVertical: Spacing.two,
+    width: 90,
+    textAlign: 'right',
+  },
+  monthlyRowContainer: {
+    borderBottomWidth: StyleSheet.hairlineWidth,
+    borderBottomColor: 'transparent',
+  },
+  editRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: Spacing.two,
+    paddingBottom: Spacing.two,
+  },
+  smallButton: { paddingHorizontal: Spacing.three },
+  bufferCard: {
+    borderRadius: Spacing.three,
+    padding: Spacing.three,
+    gap: Spacing.two,
+  },
+  bufferHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
+  bufferInputRow: { flexDirection: 'row', gap: Spacing.two },
+  bufferAmountInput: { width: 110 },
+});
