@@ -1,4 +1,5 @@
-import { useState } from 'react';
+import { useFocusEffect } from 'expo-router';
+import { useCallback, useState } from 'react';
 import { Alert, Modal, Pressable, ScrollView, StyleSheet, Switch, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
@@ -22,9 +23,15 @@ const SOURCE_OPTIONS = (Object.keys(INCOME_SOURCE_LABELS) as IncomeSource[]).map
 const ISO_DATE = /^\d{4}-\d{2}-\d{2}$/;
 
 export default function IncomeScreen() {
-  const { entries, total, isLoading, error, addIncome, removeIncome } = useIncome();
+  const { entries, total, isLoading, error, refresh, addIncome, removeIncome } = useIncome();
   const theme = useTheme();
   const [modalVisible, setModalVisible] = useState(false);
+
+  useFocusEffect(
+    useCallback(() => {
+      refresh();
+    }, [refresh])
+  );
 
   const monthLabel = new Date().toLocaleDateString('en-IN', { month: 'long', year: 'numeric' });
 

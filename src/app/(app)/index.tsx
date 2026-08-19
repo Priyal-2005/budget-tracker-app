@@ -1,3 +1,5 @@
+import { useFocusEffect } from 'expo-router';
+import { useCallback } from 'react';
 import { RefreshControl, ScrollView, StyleSheet, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
@@ -14,6 +16,14 @@ export default function HomeScreen() {
   const profile = useProfile();
 
   const monthLabel = new Date().toLocaleDateString('en-IN', { month: 'long', year: 'numeric' });
+
+  // Tab screens stay mounted, so without this the totals keep showing whatever
+  // was true when the tab first opened — stale as soon as anything is logged.
+  useFocusEffect(
+    useCallback(() => {
+      refresh();
+    }, [refresh])
+  );
 
   return (
     <ThemedView style={styles.flex}>

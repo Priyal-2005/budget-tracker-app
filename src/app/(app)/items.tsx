@@ -1,4 +1,5 @@
-import { useMemo, useState } from 'react';
+import { useFocusEffect } from 'expo-router';
+import { useCallback, useMemo, useState } from 'react';
 import { Alert, Modal, Pressable, SectionList, StyleSheet, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
@@ -32,9 +33,15 @@ const FREQUENCY_SECTION_TITLE: Record<ItemFrequency, string> = {
 };
 
 export default function ItemsScreen() {
-  const { items, isLoading, error, addItem, toggleActive, removeItem } = useRecurringItems();
+  const { items, isLoading, error, refresh, addItem, toggleActive, removeItem } = useRecurringItems();
   const theme = useTheme();
   const [modalVisible, setModalVisible] = useState(false);
+
+  useFocusEffect(
+    useCallback(() => {
+      refresh();
+    }, [refresh])
+  );
 
   const sections = useMemo(() => {
     return FREQUENCY_SECTION_ORDER.map((frequency) => ({

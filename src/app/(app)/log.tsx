@@ -1,4 +1,5 @@
-import { useEffect, useState } from 'react';
+import { useFocusEffect } from 'expo-router';
+import { useCallback, useEffect, useState } from 'react';
 import { Alert, Pressable, ScrollView, StyleSheet, TextInput, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
@@ -16,9 +17,19 @@ import { CATEGORY_LABELS, type RecurringItem } from '@/types/database';
 type WeeklyState = Record<string, { checked: boolean; amount: string }>;
 
 export default function LogScreen() {
-  const { weeklyItems, monthlyItems, loggedMonthlyItemIds, error, logItems, logBufferSpend } = useLogData();
+  const { weeklyItems, monthlyItems, loggedMonthlyItemIds, error, refresh, logItems, logBufferSpend } =
+    useLogData();
   const { summary, refresh: refreshSummary } = useMonthlySummary();
   const theme = useTheme();
+
+  // Items added on the Items tab, and buffer spent elsewhere, need to show up
+  // here without a full app restart.
+  useFocusEffect(
+    useCallback(() => {
+      refresh();
+      refreshSummary();
+    }, [refresh, refreshSummary])
+  );
 
   const [weeklyState, setWeeklyState] = useState<WeeklyState>({});
   const [isSubmittingWeekly, setIsSubmittingWeekly] = useState(false);
