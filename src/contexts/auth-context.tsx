@@ -6,7 +6,11 @@ import { supabase } from '@/lib/supabase';
 interface AuthContextValue {
   session: Session | null;
   isLoading: boolean;
-  signUp: (email: string, password: string, displayName: string) => Promise<{ error: string | null }>;
+  signUp: (
+    email: string,
+    password: string,
+    displayName: string
+  ) => Promise<{ error: string | null; needsEmailConfirmation: boolean }>;
   signIn: (email: string, password: string) => Promise<{ error: string | null }>;
   signOut: () => Promise<void>;
 }
@@ -36,12 +40,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       session,
       isLoading,
       signUp: async (email, password, displayName) => {
-        const { error } = await supabase.auth.signUp({
+        const { data, error } = await supabase.auth.signUp({
           email,
           password,
           options: { data: { display_name: displayName } },
         });
-        return { error: error?.message ?? null };
+        // With email confirmation on, Supabase returns no session and the user
+        // has to confirm first. With it off they are signed in straight away.
+        return { error: error?.message ?? null, needsEmailConfirmation: !data.session };
       },
       signIn: async (email, password) => {
         const { error } = await supabase.auth.signInWithPassword({ email, password });

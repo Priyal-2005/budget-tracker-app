@@ -35,13 +35,18 @@ export default function SignupScreen() {
     }
     setError(null);
     setIsLoading(true);
-    const { error: signUpError } = await signUp(email.trim(), password, displayName.trim());
+    const { error: signUpError, needsEmailConfirmation } = await signUp(
+      email.trim(),
+      password,
+      displayName.trim()
+    );
     setIsLoading(false);
     if (signUpError) {
       setError(signUpError);
-    } else {
+    } else if (needsEmailConfirmation) {
       setCheckEmail(true);
     }
+    // Otherwise a session already exists and the root layout routes into the app.
   };
 
   if (checkEmail) {
