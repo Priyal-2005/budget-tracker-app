@@ -14,6 +14,7 @@ export default function AppTabsLayout() {
         tabBarStyle: { backgroundColor: theme.background, borderTopColor: theme.border },
       }}>
       <Tabs.Screen name="index" options={{ title: 'Home' }} />
+      <Tabs.Screen name="income" options={{ title: 'Income' }} />
       <Tabs.Screen name="items" options={{ title: 'Items' }} />
       <Tabs.Screen name="log" options={{ title: 'Log' }} />
       <Tabs.Screen name="settings" options={{ title: 'Settings' }} />
