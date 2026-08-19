@@ -1,6 +1,6 @@
 import { useFocusEffect } from 'expo-router';
 import { useCallback, useEffect, useState } from 'react';
-import { Alert, Pressable, ScrollView, StyleSheet, TextInput, View } from 'react-native';
+import { Alert, Modal, Pressable, ScrollView, StyleSheet, TextInput, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { Button } from '@/components/button';
@@ -8,6 +8,7 @@ import { FormField } from '@/components/form-field';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { Spacing } from '@/constants/theme';
+import { useBuffer } from '@/hooks/use-buffer';
 import { useLogData } from '@/hooks/use-log-data';
 import { useMonthlySummary } from '@/hooks/use-monthly-summary';
 import { useTheme } from '@/hooks/use-theme';
@@ -20,6 +21,7 @@ export default function LogScreen() {
   const { weeklyItems, monthlyItems, loggedMonthlyItemIds, error, refresh, logItems, logBufferSpend } =
     useLogData();
   const { summary, refresh: refreshSummary } = useMonthlySummary();
+  const { allotted, refresh: refreshBuffer, setAllotment } = useBuffer();
   const theme = useTheme();
 
   // Items added on the Items tab, and buffer spent elsewhere, need to show up
@@ -28,7 +30,8 @@ export default function LogScreen() {
     useCallback(() => {
       refresh();
       refreshSummary();
-    }, [refresh, refreshSummary])
+      refreshBuffer();
+    }, [refresh, refreshSummary, refreshBuffer])
   );
 
   const [weeklyState, setWeeklyState] = useState<WeeklyState>({});
@@ -82,7 +85,13 @@ export default function LogScreen() {
             </ThemedText>
           )}
 
-          <BufferSpendCard bufferRemaining={summary?.bufferRemaining} onSubmit={logBufferSpend} onLogged={refreshSummary} />
+          <BufferSpendCard
+            bufferRemaining={summary?.bufferRemaining}
+            bufferAllotted={allotted}
+            onSetAllotment={setAllotment}
+            onSubmit={logBufferSpend}
+            onLogged={refreshSummary}
+          />
 
           <ThemedView style={styles.section}>
             <ThemedText type="smallBold" themeColor="textSecondary">
@@ -240,16 +249,21 @@ function MonthlyItemRow({
 
 function BufferSpendCard({
   bufferRemaining,
+  bufferAllotted,
+  onSetAllotment,
   onSubmit,
   onLogged,
 }: {
   bufferRemaining: number | undefined;
+  bufferAllotted: number | null;
+  onSetAllotment: (amount: number) => Promise<{ error: string | null }>;
   onSubmit: (amount: number, note: string) => Promise<{ error: string | null }>;
   onLogged: () => Promise<void>;
 }) {
   const [amount, setAmount] = useState('');
   const [note, setNote] = useState('');
   const [isSaving, setIsSaving] = useState(false);
+  const [allotmentModalVisible, setAllotmentModalVisible] = useState(false);
 
   const handleSubmit = async () => {
     const parsed = Number(amount);
@@ -273,14 +287,22 @@ function BufferSpendCard({
     <ThemedView type="backgroundElement" style={styles.bufferCard}>
       <ThemedView style={styles.bufferHeader}>
         <ThemedText type="smallBold">Buffer spend</ThemedText>
-        {bufferRemaining !== undefined && (
-          <ThemedText type="small" themeColor={bufferRemaining < 0 ? 'danger' : 'textSecondary'}>
-            {formatINR(bufferRemaining)} left
-          </ThemedText>
-        )}
+        <Pressable onPress={() => setAllotmentModalVisible(true)}>
+          {bufferAllotted === null ? (
+            <ThemedText type="smallBold" themeColor="primary">
+              Set buffer
+            </ThemedText>
+          ) : (
+            <ThemedText type="small" themeColor={(bufferRemaining ?? 0) < 0 ? 'danger' : 'textSecondary'}>
+              {formatINR(bufferRemaining ?? 0)} of {formatINR(bufferAllotted)} left
+            </ThemedText>
+          )}
+        </Pressable>
       </ThemedView>
       <ThemedText themeColor="textSecondary" type="small">
-        Ice cream, Maggi, random cravings — log it here.
+        {bufferAllotted === null
+          ? 'Set a monthly buffer for ice cream, Maggi and random cravings.'
+          : 'Ice cream, Maggi, random cravings — log it here.'}
       </ThemedText>
       <View style={styles.bufferInputRow}>
         <FormField
@@ -294,7 +316,98 @@ function BufferSpendCard({
         <FormField label="" value={note} onChangeText={setNote} placeholder="What for? (optional)" style={styles.flex1} />
       </View>
       <Button title="Log buffer spend" onPress={handleSubmit} isLoading={isSaving} />
+
+      <SetBufferModal
+        visible={allotmentModalVisible}
+        currentAmount={bufferAllotted}
+        onClose={() => setAllotmentModalVisible(false)}
+        onSubmit={onSetAllotment}
+        onSaved={onLogged}
+      />
     </ThemedView>
+  );
+}
+
+function SetBufferModal({
+  visible,
+  currentAmount,
+  onClose,
+  onSubmit,
+  onSaved,
+}: {
+  visible: boolean;
+  currentAmount: number | null;
+  onClose: () => void;
+  onSubmit: (amount: number) => Promise<{ error: string | null }>;
+  onSaved: () => Promise<void>;
+}) {
+  const [amount, setAmount] = useState('');
+  const [error, setError] = useState<string | null>(null);
+  const [isSaving, setIsSaving] = useState(false);
+
+  // Prefill with the amount already set for this month, so reopening the modal
+  // is an edit rather than starting from blank.
+  useEffect(() => {
+    if (visible) {
+      setAmount(currentAmount === null ? '' : String(currentAmount));
+      setError(null);
+    }
+  }, [visible, currentAmount]);
+
+  const handleSubmit = async () => {
+    const parsed = Number(amount);
+    if (!amount || Number.isNaN(parsed) || parsed < 0) {
+      setError('Enter a valid amount.');
+      return;
+    }
+    setIsSaving(true);
+    const { error: submitError } = await onSubmit(parsed);
+    setIsSaving(false);
+    if (submitError) {
+      setError(submitError);
+    } else {
+      await onSaved();
+      onClose();
+    }
+  };
+
+  const monthLabel = new Date().toLocaleDateString('en-IN', { month: 'long' });
+
+  return (
+    <Modal visible={visible} animationType="slide" presentationStyle="pageSheet" onRequestClose={onClose}>
+      <ThemedView style={styles.flex}>
+        <SafeAreaView style={styles.flex}>
+          <View style={styles.modalContent}>
+            <ThemedText type="title" style={styles.modalTitle}>
+              Buffer for {monthLabel}
+            </ThemedText>
+            <ThemedText themeColor="textSecondary" type="small">
+              Money set aside for unplanned treats, kept separate from your fixed
+              expenses so you know what is safe to spend.
+            </ThemedText>
+
+            <FormField
+              label="Amount (₹)"
+              value={amount}
+              onChangeText={setAmount}
+              keyboardType="decimal-pad"
+              placeholder="e.g. 500"
+            />
+
+            {error && (
+              <ThemedText themeColor="danger" type="small">
+                {error}
+              </ThemedText>
+            )}
+
+            <ThemedView style={styles.modalActions}>
+              <Button title="Cancel" variant="secondary" onPress={onClose} style={styles.flex1} />
+              <Button title="Save" onPress={handleSubmit} isLoading={isSaving} style={styles.flex1} />
+            </ThemedView>
+          </View>
+        </SafeAreaView>
+      </ThemedView>
+    </Modal>
   );
 }
 
@@ -346,4 +459,7 @@ const styles = StyleSheet.create({
   bufferHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
   bufferInputRow: { flexDirection: 'row', gap: Spacing.two },
   bufferAmountInput: { width: 110 },
+  modalContent: { flex: 1, padding: Spacing.four, gap: Spacing.three },
+  modalTitle: { fontSize: 24, lineHeight: 30, marginBottom: Spacing.two },
+  modalActions: { flexDirection: 'row', gap: Spacing.three, marginTop: Spacing.three },
 });
