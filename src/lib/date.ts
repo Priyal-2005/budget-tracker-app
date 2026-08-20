@@ -51,6 +51,21 @@ export function monthKeyOf(isoDate: string) {
   return `${isoDate.slice(0, 7)}-01`;
 }
 
+// The `count` whole months before this one. The current month is left out on
+// purpose: it is still in progress, and averaging a half-finished month in
+// would drag the figure below what a normal month actually looks like.
+export function getCompletedMonths(count: number, date = new Date()) {
+  const monthKeys = Array.from({ length: count }, (_, index) =>
+    toISODate(new Date(date.getFullYear(), date.getMonth() - count + index, 1))
+  );
+
+  return {
+    monthKeys,
+    start: monthKeys[0],
+    end: toISODate(new Date(date.getFullYear(), date.getMonth(), 0)),
+  };
+}
+
 export function todayISODate() {
   return toISODate(new Date());
 }

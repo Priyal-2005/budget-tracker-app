@@ -10,6 +10,7 @@ import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { Spacing } from '@/constants/theme';
 import { useIncome } from '@/hooks/use-income';
+import { useIncomeAverage } from '@/hooks/use-income-average';
 import { useTheme } from '@/hooks/use-theme';
 import { formatINR } from '@/lib/currency';
 import { todayISODate } from '@/lib/date';
@@ -24,13 +25,15 @@ const ISO_DATE = /^\d{4}-\d{2}-\d{2}$/;
 
 export default function IncomeScreen() {
   const { entries, total, isLoading, error, refresh, addIncome, removeIncome } = useIncome();
+  const { average, refresh: refreshAverage } = useIncomeAverage();
   const theme = useTheme();
   const [modalVisible, setModalVisible] = useState(false);
 
   useFocusEffect(
     useCallback(() => {
       refresh();
-    }, [refresh])
+      refreshAverage();
+    }, [refresh, refreshAverage])
   );
 
   const monthLabel = new Date().toLocaleDateString('en-IN', { month: 'long', year: 'numeric' });
@@ -72,6 +75,19 @@ export default function IncomeScreen() {
               {formatINR(total)}
             </ThemedText>
           </ThemedView>
+
+          {average && (
+            <ThemedView type="backgroundElement" style={styles.averageCard}>
+              <ThemedText themeColor="textSecondary" type="small">
+                Internship and freelance, per month
+              </ThemedText>
+              <ThemedText type="smallBold">{formatINR(Math.round(average.monthlyAverage))}</ThemedText>
+              <ThemedText themeColor="textSecondary" type="small">
+                Averaged over {average.monthsCounted === 1 ? 'last month' : `the last ${average.monthsCounted} months`}
+                , not counting this one. Handy when this money is what you are planning around.
+              </ThemedText>
+            </ThemedView>
+          )}
 
           {error && (
             <ThemedText themeColor="danger" type="small">
@@ -268,6 +284,12 @@ const styles = StyleSheet.create({
     marginBottom: Spacing.two,
   },
   totalValue: { fontSize: 28, lineHeight: 34 },
+  averageCard: {
+    borderRadius: Spacing.three,
+    padding: Spacing.three,
+    gap: Spacing.half,
+    marginBottom: Spacing.two,
+  },
   row: {
     flexDirection: 'row',
     justifyContent: 'space-between',
