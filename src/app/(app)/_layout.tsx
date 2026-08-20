@@ -17,6 +17,7 @@ export default function AppTabsLayout() {
       <Tabs.Screen name="income" options={{ title: 'Income' }} />
       <Tabs.Screen name="items" options={{ title: 'Items' }} />
       <Tabs.Screen name="log" options={{ title: 'Log' }} />
+      <Tabs.Screen name="goals" options={{ title: 'Goals' }} />
       <Tabs.Screen name="settings" options={{ title: 'Settings' }} />
     </Tabs>
   );
