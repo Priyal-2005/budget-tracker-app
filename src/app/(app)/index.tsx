@@ -27,11 +27,12 @@ function describeSpendChange(trend: MonthTotals[]) {
   const lastMonth = trend[trend.length - 2];
   if (lastMonth.spend === 0) return null;
 
-  const difference = thisMonth.spend - lastMonth.spend;
-  if (difference === 0) return 'Spending exactly matches last month.';
-  return difference > 0
-    ? `${formatINR(difference)} more spent than by the end of last month.`
-    : `${formatINR(Math.abs(difference))} less spent than last month.`;
+  // This month is still running, so it is stated against last month's full
+  // total rather than dressed up as a trend — early in a month "less spent
+  // than last month" would be true but meaningless.
+  return `${formatINR(thisMonth.spend)} spent so far, against ${formatINR(
+    lastMonth.spend
+  )} for all of last month.`;
 }
 
 export default function HomeScreen() {

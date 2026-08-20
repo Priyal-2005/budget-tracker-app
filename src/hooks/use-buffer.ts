@@ -10,7 +10,12 @@ export function useBuffer() {
   const [isLoading, setIsLoading] = useState(true);
 
   const refresh = useCallback(async () => {
-    if (!session) return;
+    if (!session) {
+      // Leaving isLoading true here would strand the screen on a blank state
+      // with nothing to explain it.
+      setIsLoading(false);
+      return;
+    }
     setIsLoading(true);
     const { monthKey } = getMonthRange();
     const { data } = await supabase

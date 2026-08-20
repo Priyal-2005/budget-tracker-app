@@ -19,7 +19,12 @@ export function useIncomeAverage() {
   const [isLoading, setIsLoading] = useState(true);
 
   const refresh = useCallback(async () => {
-    if (!session) return;
+    if (!session) {
+      // Leaving isLoading true here would strand the screen on a blank state
+      // with nothing to explain it.
+      setIsLoading(false);
+      return;
+    }
     setIsLoading(true);
     const { monthKeys, start, end } = getCompletedMonths(AVERAGE_MONTHS);
 

@@ -62,16 +62,23 @@ export default function LogScreen() {
   const pendingWeeklyItems = weeklyItems.filter((item) => !loggedWeeklyItemIds.has(item.id));
 
   const handleLogWeek = async () => {
+    // A cleared amount field parses as 0, which would log a zero row and still
+    // count the item as done for the week, blocking the real entry.
     const entries = pendingWeeklyItems
-      .filter((item) => weeklyState[item.id]?.checked)
-      .map((item) => {
-        const amount = Number(weeklyState[item.id]?.amount);
-        return { recurring_item_id: item.id, amount, category: item.category };
+      .filter((item) => {
+        const state = weeklyState[item.id];
+        if (!state?.checked) return false;
+        const amount = Number(state.amount.trim());
+        return state.amount.trim() !== '' && Number.isFinite(amount) && amount > 0;
       })
-      .filter((entry) => !Number.isNaN(entry.amount) && entry.amount >= 0);
+      .map((item) => ({
+        recurring_item_id: item.id,
+        amount: Number(weeklyState[item.id].amount.trim()),
+        category: item.category,
+      }));
 
     if (entries.length === 0) {
-      Alert.alert('Nothing selected', 'Check at least one item to log.');
+      Alert.alert('Nothing to log', 'Check at least one item and give it an amount.');
       return;
     }
     setIsSubmittingWeekly(true);

@@ -12,7 +12,12 @@ export function useIncome() {
   const [error, setError] = useState<string | null>(null);
 
   const refresh = useCallback(async () => {
-    if (!session) return;
+    if (!session) {
+      // Leaving isLoading true here would strand the screen on a blank state
+      // with nothing to explain it.
+      setIsLoading(false);
+      return;
+    }
     setIsLoading(true);
     const { start, end } = getMonthRange();
 
