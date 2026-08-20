@@ -19,7 +19,9 @@ import { formatINR } from '@/lib/currency';
 import { notifyBufferStatus } from '@/lib/notify';
 import { CATEGORY_LABELS, type ExpenseLog, type RecurringItem } from '@/types/database';
 
-type WeeklyState = Record<string, { checked: boolean; amount: string }>;
+// seededFrom records the item's usual amount at the time the row was filled
+// in, so an edited price can be told apart from a figure the user typed.
+type WeeklyState = Record<string, { checked: boolean; amount: string; seededFrom: number }>;
 
 export default function LogScreen() {
   const {
@@ -57,7 +59,16 @@ export default function LogScreen() {
     setWeeklyState((prev) => {
       const next = { ...prev };
       for (const item of weeklyItems) {
-        if (!next[item.id]) next[item.id] = { checked: true, amount: String(item.default_amount) };
+        const existing = next[item.id];
+        // Re-fill when the item's usual amount changes, so editing a price on
+        // the Items tab is reflected here instead of logging the old figure.
+        if (!existing || existing.seededFrom !== item.default_amount) {
+          next[item.id] = {
+            checked: existing?.checked ?? true,
+            amount: String(item.default_amount),
+            seededFrom: item.default_amount,
+          };
+        }
       }
       return next;
     });
@@ -152,7 +163,13 @@ export default function LogScreen() {
                   <WeeklyItemRow
                     key={item.id}
                     item={item}
-                    state={weeklyState[item.id] ?? { checked: true, amount: String(item.default_amount) }}
+                    state={
+                      weeklyState[item.id] ?? {
+                        checked: true,
+                        amount: String(item.default_amount),
+                        seededFrom: item.default_amount,
+                      }
+                    }
                     onChange={(next) => setWeeklyState((prev) => ({ ...prev, [item.id]: next }))}
                   />
                 )
@@ -207,8 +224,8 @@ function WeeklyItemRow({
   onChange,
 }: {
   item: RecurringItem;
-  state: { checked: boolean; amount: string };
-  onChange: (next: { checked: boolean; amount: string }) => void;
+  state: WeeklyState[string];
+  onChange: (next: WeeklyState[string]) => void;
 }) {
   const theme = useTheme();
   return (
