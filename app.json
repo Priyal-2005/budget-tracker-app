@@ -48,6 +48,12 @@
         "projectId": "8d8e5ece-e1b6-484e-9830-1fb169dbd2ce"
       }
     },
-    "owner": "priyal-sardas-team"
+    "owner": "priyal-sardas-team",
+    "runtimeVersion": {
+      "policy": "appVersion"
+    },
+    "updates": {
+      "url": "https://u.expo.dev/8d8e5ece-e1b6-484e-9830-1fb169dbd2ce"
+    }
   }
 }
