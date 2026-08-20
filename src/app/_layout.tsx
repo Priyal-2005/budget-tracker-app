@@ -1,23 +1,34 @@
-import { DarkTheme, DefaultTheme, Stack, ThemeProvider } from 'expo-router';
+import { DarkTheme, DefaultTheme, Stack, ThemeProvider as NavigationThemeProvider } from 'expo-router';
 import * as SplashScreen from 'expo-splash-screen';
 import { useEffect } from 'react';
-import { useColorScheme } from 'react-native';
 
 import { AuthProvider, useAuth } from '@/contexts/auth-context';
+import { ThemeProvider, useThemePreference } from '@/contexts/theme-context';
 import { useAutoUpdate } from '@/hooks/use-auto-update';
 
 SplashScreen.preventAutoHideAsync();
 
 export default function RootLayout() {
-  const colorScheme = useColorScheme();
   useAutoUpdate();
 
   return (
-    <ThemeProvider value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}>
+    <ThemeProvider>
+      <ThemedApp />
+    </ThemeProvider>
+  );
+}
+
+// Sits inside ThemeProvider so navigation chrome follows the chosen theme too,
+// not just the screens.
+function ThemedApp() {
+  const { scheme } = useThemePreference();
+
+  return (
+    <NavigationThemeProvider value={scheme === 'dark' ? DarkTheme : DefaultTheme}>
       <AuthProvider>
         <RootNavigator />
       </AuthProvider>
-    </ThemeProvider>
+    </NavigationThemeProvider>
   );
 }
 

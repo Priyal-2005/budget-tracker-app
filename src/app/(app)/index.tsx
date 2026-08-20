@@ -1,3 +1,4 @@
+import Ionicons from '@expo/vector-icons/Ionicons';
 import { Link, useFocusEffect } from 'expo-router';
 import { useCallback, useState } from 'react';
 import { Alert, Pressable, RefreshControl, ScrollView, StyleSheet, View } from 'react-native';
@@ -9,6 +10,7 @@ import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { TrendChart } from '@/components/trend-chart';
 import { Spacing } from '@/constants/theme';
+import { useThemePreference } from '@/contexts/theme-context';
 import { useMonthlyReport } from '@/hooks/use-monthly-report';
 import { useMonthlySummary } from '@/hooks/use-monthly-summary';
 import { TREND_MONTHS, useMonthlyTrend, type MonthTotals } from '@/hooks/use-monthly-trend';
@@ -41,6 +43,7 @@ export default function HomeScreen() {
   const theme = useTheme();
   const { build } = useMonthlyReport();
   const { trend, refresh: refreshTrend } = useMonthlyTrend();
+  const { scheme, toggle } = useThemePreference();
   const [isSharing, setIsSharing] = useState(false);
 
   const handleShare = async () => {
@@ -84,17 +87,30 @@ export default function HomeScreen() {
               </ThemedText>
               <ThemedText themeColor="textSecondary">{monthLabel}</ThemedText>
             </ThemedView>
-            <Link href="/(app)/settings" asChild>
+            <ThemedView style={styles.headerActions}>
               <Pressable
+                onPress={toggle}
                 accessibilityRole="button"
-                accessibilityLabel="Settings"
-                style={StyleSheet.flatten([
-                  styles.settingsButton,
-                  { backgroundColor: theme.backgroundElement },
-                ])}>
-                <ThemedText type="smallBold">Settings</ThemedText>
+                accessibilityLabel={scheme === 'dark' ? 'Switch to light mode' : 'Switch to dark mode'}
+                style={[styles.iconButton, { backgroundColor: theme.backgroundElement }]}>
+                <Ionicons
+                  name={scheme === 'dark' ? 'sunny' : 'moon'}
+                  size={18}
+                  color={theme.text}
+                />
               </Pressable>
-            </Link>
+              <Link href="/(app)/settings" asChild>
+                <Pressable
+                  accessibilityRole="button"
+                  accessibilityLabel="Settings"
+                  style={StyleSheet.flatten([
+                    styles.settingsButton,
+                    { backgroundColor: theme.backgroundElement },
+                  ])}>
+                  <ThemedText type="smallBold">Settings</ThemedText>
+                </Pressable>
+              </Link>
+            </ThemedView>
           </ThemedView>
 
           {error && (
@@ -178,6 +194,14 @@ const styles = StyleSheet.create({
     marginBottom: Spacing.two,
   },
   headerText: { gap: Spacing.half, flex: 1 },
+  headerActions: { flexDirection: 'row', alignItems: 'center', gap: Spacing.two },
+  iconButton: {
+    width: 36,
+    height: 36,
+    borderRadius: Spacing.two,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
   settingsButton: {
     paddingHorizontal: Spacing.three,
     paddingVertical: Spacing.two,
