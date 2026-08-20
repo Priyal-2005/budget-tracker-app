@@ -14,7 +14,7 @@ export default function SettingsScreen() {
   const profile = useProfile();
 
   return (
-    <ThemedView style={styles.flex}>
+    <ThemedView type="background" style={styles.flex}>
       <SafeAreaView style={styles.flex}>
         <ThemedView style={styles.container}>
           <Pressable onPress={() => router.back()} accessibilityRole="button">

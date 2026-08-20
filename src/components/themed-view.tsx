@@ -12,5 +12,8 @@ export type ThemedViewProps = ViewProps & {
 export function ThemedView({ style, lightColor, darkColor, type, ...otherProps }: ThemedViewProps) {
   const theme = useTheme();
 
-  return <View style={[{ backgroundColor: theme[type ?? 'background'] }, style]} {...otherProps} />;
+  // Only paints when a surface is actually asked for. Painting by default made
+  // every nested layout wrapper stamp the page colour over the card behind it —
+  // barely visible on white, but obvious dark boxes in dark mode.
+  return <View style={[type ? { backgroundColor: theme[type] } : null, style]} {...otherProps} />;
 }

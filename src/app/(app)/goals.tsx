@@ -35,7 +35,7 @@ export default function GoalsScreen() {
   };
 
   return (
-    <ThemedView style={styles.flex}>
+    <ThemedView type="background" style={styles.flex}>
       <SafeAreaView style={styles.flex}>
         <ThemedView style={styles.header}>
           <ThemedText type="title" style={styles.title}>
@@ -244,7 +244,7 @@ function AddGoalModal({
 
   return (
     <Modal visible={visible} animationType="slide" presentationStyle="pageSheet" onRequestClose={onClose}>
-      <ThemedView style={styles.flex}>
+      <ThemedView type="background" style={styles.flex}>
         <SafeAreaView style={styles.flex}>
           <View style={styles.modalContent}>
             <ThemedText type="title" style={styles.modalTitle}>

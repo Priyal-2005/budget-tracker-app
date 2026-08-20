@@ -1,5 +1,5 @@
 import { useFocusEffect } from 'expo-router';
-import { useCallback, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { Alert, Modal, Pressable, SectionList, StyleSheet, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
@@ -33,9 +33,22 @@ const FREQUENCY_SECTION_TITLE: Record<ItemFrequency, string> = {
 };
 
 export default function ItemsScreen() {
-  const { items, isLoading, error, refresh, addItem, toggleActive, removeItem } = useRecurringItems();
+  const { items, isLoading, error, refresh, addItem, updateItem, toggleActive, removeItem } =
+    useRecurringItems();
   const theme = useTheme();
   const [modalVisible, setModalVisible] = useState(false);
+  // Null means the modal is adding rather than editing.
+  const [editingItem, setEditingItem] = useState<RecurringItem | null>(null);
+
+  const openAdd = () => {
+    setEditingItem(null);
+    setModalVisible(true);
+  };
+
+  const openEdit = (item: RecurringItem) => {
+    setEditingItem(item);
+    setModalVisible(true);
+  };
 
   useFocusEffect(
     useCallback(() => {
@@ -58,13 +71,13 @@ export default function ItemsScreen() {
   };
 
   return (
-    <ThemedView style={styles.flex}>
+    <ThemedView type="background" style={styles.flex}>
       <SafeAreaView style={styles.flex}>
         <ThemedView style={styles.header}>
           <ThemedText type="title" style={styles.title}>
             Recurring Items
           </ThemedText>
-          <Pressable onPress={() => setModalVisible(true)} style={[styles.addButton, { backgroundColor: theme.primary }]}>
+          <Pressable onPress={openAdd} style={[styles.addButton, { backgroundColor: theme.primary }]}>
             <ThemedText type="smallBold" style={{ color: '#ffffff' }}>
               + Add
             </ThemedText>
@@ -96,7 +109,7 @@ export default function ItemsScreen() {
             </ThemedText>
           )}
           renderItem={({ item }) => (
-            <Pressable onLongPress={() => handleRemove(item)}>
+            <Pressable onPress={() => openEdit(item)} onLongPress={() => handleRemove(item)}>
               <ThemedView type="backgroundElement" style={[styles.row, !item.is_active && styles.rowInactive]}>
                 <ThemedView style={styles.rowInfo}>
                   <ThemedText type="smallBold">{item.name}</ThemedText>
@@ -117,18 +130,27 @@ export default function ItemsScreen() {
           )}
         />
 
-        <AddItemModal visible={modalVisible} onClose={() => setModalVisible(false)} onSubmit={addItem} />
+        <ItemModal
+          visible={modalVisible}
+          item={editingItem}
+          onClose={() => setModalVisible(false)}
+          onSubmit={(input) =>
+            editingItem ? updateItem(editingItem.id, input) : addItem(input)
+          }
+        />
       </SafeAreaView>
     </ThemedView>
   );
 }
 
-function AddItemModal({
+function ItemModal({
   visible,
+  item,
   onClose,
   onSubmit,
 }: {
   visible: boolean;
+  item: RecurringItem | null;
   onClose: () => void;
   onSubmit: (input: {
     name: string;
@@ -143,6 +165,17 @@ function AddItemModal({
   const [frequency, setFrequency] = useState<ItemFrequency>('weekly');
   const [error, setError] = useState<string | null>(null);
   const [isSaving, setIsSaving] = useState(false);
+
+  // Loads the item being edited each time the modal opens, and clears back to
+  // blanks when it is opened to add something new.
+  useEffect(() => {
+    if (!visible) return;
+    setName(item?.name ?? '');
+    setAmount(item ? String(item.default_amount) : '');
+    setCategory(item?.category ?? 'groceries');
+    setFrequency(item?.frequency ?? 'weekly');
+    setError(null);
+  }, [visible, item]);
 
   const reset = () => {
     setName('');
@@ -180,11 +213,11 @@ function AddItemModal({
 
   return (
     <Modal visible={visible} animationType="slide" presentationStyle="pageSheet" onRequestClose={onClose}>
-      <ThemedView style={styles.flex}>
+      <ThemedView type="background" style={styles.flex}>
         <SafeAreaView style={styles.flex}>
           <View style={styles.modalContent}>
             <ThemedText type="title" style={styles.modalTitle}>
-              Add item
+              {item ? 'Edit item' : 'Add item'}
             </ThemedText>
 
             <FormField label="Name" value={name} onChangeText={setName} placeholder="e.g. Milk" />

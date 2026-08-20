@@ -75,7 +75,7 @@ export default function HomeScreen() {
   );
 
   return (
-    <ThemedView style={styles.flex}>
+    <ThemedView type="background" style={styles.flex}>
       <SafeAreaView style={styles.flex}>
         <ScrollView
           contentContainerStyle={styles.container}

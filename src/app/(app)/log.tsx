@@ -6,11 +6,12 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { Button } from '@/components/button';
 import { FormField } from '@/components/form-field';
 import { ThemedText } from '@/components/themed-text';
+import { ProgressBar } from '@/components/progress-bar';
 import { ThemedView } from '@/components/themed-view';
 import { Spacing } from '@/constants/theme';
 import { useBuffer } from '@/hooks/use-buffer';
 import { useBufferSpends } from '@/hooks/use-buffer-spends';
-import { useLogData } from '@/hooks/use-log-data';
+import { useLogData, type LoggedEntry } from '@/hooks/use-log-data';
 import { useMonthlySummary } from '@/hooks/use-monthly-summary';
 import { useTheme } from '@/hooks/use-theme';
 import { bufferStatusColor, bufferStatusLabel, getBufferStatus } from '@/lib/buffer-status';
@@ -24,12 +25,14 @@ export default function LogScreen() {
   const {
     weeklyItems,
     monthlyItems,
-    loggedMonthlyItemIds,
-    loggedWeeklyItemIds,
+    loggedMonthly,
+    loggedWeekly,
     error,
     refresh,
     logItems,
     logBufferSpend,
+    updateLoggedAmount,
+    removeLoggedEntry,
   } = useLogData();
   const { summary, refresh: refreshSummary } = useMonthlySummary();
   const { allotted, refresh: refreshBuffer, setAllotment } = useBuffer();
@@ -62,7 +65,7 @@ export default function LogScreen() {
 
   // Anything already logged this week is excluded, so tapping the button twice
   // cannot quietly double-count the week's shop.
-  const pendingWeeklyItems = weeklyItems.filter((item) => !loggedWeeklyItemIds.has(item.id));
+  const pendingWeeklyItems = weeklyItems.filter((item) => !loggedWeekly.has(item.id));
 
   const handleLogWeek = async () => {
     // A cleared amount field parses as 0, which would log a zero row and still
@@ -96,7 +99,7 @@ export default function LogScreen() {
   };
 
   return (
-    <ThemedView style={styles.flex}>
+    <ThemedView type="background" style={styles.flex}>
       <SafeAreaView style={styles.flex}>
         <ScrollView contentContainerStyle={styles.container}>
           <ThemedText type="title" style={styles.title}>
@@ -136,8 +139,15 @@ export default function LogScreen() {
               </ThemedText>
             ) : (
               weeklyItems.map((item) =>
-                loggedWeeklyItemIds.has(item.id) ? (
-                  <LoggedItemRow key={item.id} item={item} />
+                loggedWeekly.has(item.id) ? (
+                  <LoggedItemRow
+                    key={item.id}
+                    item={item}
+                    entry={loggedWeekly.get(item.id)!}
+                    onUpdate={updateLoggedAmount}
+                    onRemove={removeLoggedEntry}
+                    onChanged={refreshSummary}
+                  />
                 ) : (
                   <WeeklyItemRow
                     key={item.id}
@@ -171,14 +181,16 @@ export default function LogScreen() {
                 <MonthlyItemRow
                   key={item.id}
                   item={item}
-                  isLogged={loggedMonthlyItemIds.has(item.id)}
+                  entry={loggedMonthly.get(item.id) ?? null}
                   onLog={async (amount) => {
                     const { error: logError } = await logItems([
                       { recurring_item_id: item.id, amount, category: item.category },
                     ]);
                     if (logError) Alert.alert('Error', logError);
-                    else await refreshSummary();
                   }}
+                  onUpdate={updateLoggedAmount}
+                  onRemove={removeLoggedEntry}
+                  onChanged={refreshSummary}
                 />
               ))
             )}
@@ -229,43 +241,152 @@ function WeeklyItemRow({
   );
 }
 
-function LoggedItemRow({ item }: { item: RecurringItem }) {
+// A logged row stays editable: a mistyped amount can be corrected, and the
+// whole entry removed so the item goes back to unlogged.
+function LoggedItemRow({
+  item,
+  entry,
+  onUpdate,
+  onRemove,
+  onChanged,
+}: {
+  item: RecurringItem;
+  entry: LoggedEntry;
+  onUpdate: (logId: string, amount: number) => Promise<{ error: string | null }>;
+  onRemove: (logId: string) => Promise<{ error: string | null }>;
+  onChanged: () => Promise<void>;
+}) {
+  const theme = useTheme();
+  const [editing, setEditing] = useState(false);
+  const [amount, setAmount] = useState(String(entry.amount));
+  const [isSaving, setIsSaving] = useState(false);
+
+  useEffect(() => {
+    setAmount(String(entry.amount));
+  }, [entry.amount]);
+
+  const handleSave = async () => {
+    const parsed = Number(amount.trim());
+    if (amount.trim() === '' || !Number.isFinite(parsed) || parsed <= 0) {
+      Alert.alert('Enter an amount', 'How much did it actually cost?');
+      return;
+    }
+    setIsSaving(true);
+    const { error } = await onUpdate(entry.logId, parsed);
+    setIsSaving(false);
+    if (error) Alert.alert('Error', error);
+    else {
+      await onChanged();
+      setEditing(false);
+    }
+  };
+
+  const handleRemove = () => {
+    Alert.alert('Remove entry', `Remove the ${formatINR(entry.amount)} logged for ${item.name}?`, [
+      { text: 'Cancel', style: 'cancel' },
+      {
+        text: 'Remove',
+        style: 'destructive',
+        onPress: async () => {
+          const { error } = await onRemove(entry.logId);
+          if (error) Alert.alert('Error', error);
+          else await onChanged();
+        },
+      },
+    ]);
+  };
+
   return (
-    <ThemedView style={styles.itemRow}>
-      <ThemedView style={styles.itemRowInfo}>
-        <ThemedText type="default">{item.name}</ThemedText>
-        <ThemedText themeColor="textSecondary" type="small">
-          {CATEGORY_LABELS[item.category]}
-        </ThemedText>
+    <ThemedView style={styles.monthlyRowContainer}>
+      <ThemedView style={styles.itemRow}>
+        <ThemedView style={styles.itemRowInfo}>
+          <ThemedText type="default">{item.name}</ThemedText>
+          <ThemedText themeColor="textSecondary" type="small">
+            {CATEGORY_LABELS[item.category]}
+          </ThemedText>
+        </ThemedView>
+        {editing ? null : (
+          <Pressable onPress={() => setEditing(true)}>
+            <ThemedText type="small" themeColor="success">
+              {formatINR(entry.amount)} ✓
+            </ThemedText>
+          </Pressable>
+        )}
       </ThemedView>
-      <ThemedText type="small" themeColor="success">
-        ✓ Logged
-      </ThemedText>
+      {editing && (
+        <ThemedView style={styles.editRow}>
+          <TextInput
+            value={amount}
+            onChangeText={setAmount}
+            keyboardType="decimal-pad"
+            style={[styles.amountInput, { borderColor: theme.border, color: theme.text, flex: 1 }]}
+          />
+          <Button title="Remove" variant="danger" onPress={handleRemove} style={styles.smallButton} />
+          <Button title="Save" onPress={handleSave} isLoading={isSaving} style={styles.smallButton} />
+        </ThemedView>
+      )}
     </ThemedView>
   );
 }
 
 function MonthlyItemRow({
   item,
-  isLogged,
+  entry,
   onLog,
+  onUpdate,
+  onRemove,
+  onChanged,
 }: {
   item: RecurringItem;
-  isLogged: boolean;
+  entry: LoggedEntry | null;
   onLog: (amount: number) => Promise<void>;
+  onUpdate: (logId: string, amount: number) => Promise<{ error: string | null }>;
+  onRemove: (logId: string) => Promise<{ error: string | null }>;
+  onChanged: () => Promise<void>;
 }) {
   const theme = useTheme();
   const [editing, setEditing] = useState(false);
   const [amount, setAmount] = useState(String(item.default_amount));
   const [isSaving, setIsSaving] = useState(false);
 
+  useEffect(() => {
+    if (entry) setAmount(String(entry.amount));
+  }, [entry]);
+
   const handleConfirm = async () => {
-    const parsed = Number(amount);
-    if (Number.isNaN(parsed) || parsed < 0) return;
+    const parsed = Number(amount.trim());
+    if (amount.trim() === '' || !Number.isFinite(parsed) || parsed <= 0) {
+      Alert.alert('Enter an amount', 'How much did it cost?');
+      return;
+    }
     setIsSaving(true);
-    await onLog(parsed);
+    // Editing an existing entry updates it; otherwise this is the first log.
+    const result = entry ? await onUpdate(entry.logId, parsed) : (await onLog(parsed), { error: null });
     setIsSaving(false);
-    setEditing(false);
+    if (result.error) Alert.alert('Error', result.error);
+    else {
+      await onChanged();
+      setEditing(false);
+    }
+  };
+
+  const handleRemove = () => {
+    if (!entry) return;
+    Alert.alert('Remove entry', `Remove the ${formatINR(entry.amount)} logged for ${item.name}?`, [
+      { text: 'Cancel', style: 'cancel' },
+      {
+        text: 'Remove',
+        style: 'destructive',
+        onPress: async () => {
+          const { error } = await onRemove(entry.logId);
+          if (error) Alert.alert('Error', error);
+          else {
+            await onChanged();
+            setEditing(false);
+          }
+        },
+      },
+    ]);
   };
 
   return (
@@ -277,10 +398,12 @@ function MonthlyItemRow({
             {CATEGORY_LABELS[item.category]} · usually {formatINR(item.default_amount)}
           </ThemedText>
         </ThemedView>
-        {isLogged ? (
-          <ThemedText type="small" themeColor="success">
-            ✓ Logged
-          </ThemedText>
+        {entry ? (
+          <Pressable onPress={() => setEditing(true)}>
+            <ThemedText type="small" themeColor="success">
+              {formatINR(entry.amount)} ✓
+            </ThemedText>
+          </Pressable>
         ) : editing ? null : (
           <Pressable onPress={() => setEditing(true)}>
             <ThemedText type="smallBold" themeColor="primary">
@@ -289,7 +412,7 @@ function MonthlyItemRow({
           </Pressable>
         )}
       </ThemedView>
-      {editing && !isLogged && (
+      {editing && (
         <ThemedView style={styles.editRow}>
           <TextInput
             value={amount}
@@ -297,8 +420,17 @@ function MonthlyItemRow({
             keyboardType="decimal-pad"
             style={[styles.amountInput, { borderColor: theme.border, color: theme.text, flex: 1 }]}
           />
-          <Button title="Cancel" variant="secondary" onPress={() => setEditing(false)} style={styles.smallButton} />
-          <Button title="Confirm" onPress={handleConfirm} isLoading={isSaving} style={styles.smallButton} />
+          {entry ? (
+            <Button title="Remove" variant="danger" onPress={handleRemove} style={styles.smallButton} />
+          ) : (
+            <Button
+              title="Cancel"
+              variant="secondary"
+              onPress={() => setEditing(false)}
+              style={styles.smallButton}
+            />
+          )}
+          <Button title="Save" onPress={handleConfirm} isLoading={isSaving} style={styles.smallButton} />
         </ThemedView>
       )}
     </ThemedView>
@@ -364,48 +496,65 @@ function BufferSpendCard({
     }
   };
 
+  const spent = (bufferAllotted ?? 0) - (bufferRemaining ?? 0);
+  const progress = bufferAllotted && bufferAllotted > 0 ? spent / bufferAllotted : 0;
+
   return (
     <ThemedView type="backgroundElement" style={styles.bufferCard}>
       <ThemedView style={styles.bufferHeader}>
-        <ThemedText type="smallBold">Buffer spend</ThemedText>
-        <Pressable onPress={() => setAllotmentModalVisible(true)}>
-          {bufferAllotted === null ? (
-            <ThemedText type="smallBold" themeColor="primary">
-              Set buffer
-            </ThemedText>
-          ) : (
-            <ThemedText
-              type="small"
-              themeColor={status === 'healthy' ? 'textSecondary' : bufferStatusColor(status)}>
-              {formatINR(bufferRemaining ?? 0)} of {formatINR(bufferAllotted)} left
-            </ThemedText>
-          )}
+        <ThemedView style={styles.bufferHeadings}>
+          <ThemedText type="smallBold">Buffer</ThemedText>
+          <ThemedText themeColor="textSecondary" type="small">
+            Ice cream, Maggi, random cravings
+          </ThemedText>
+        </ThemedView>
+        <Pressable onPress={() => setAllotmentModalVisible(true)} hitSlop={8}>
+          <ThemedText type="smallBold" themeColor="primary">
+            {bufferAllotted === null ? 'Set buffer' : 'Edit'}
+          </ThemedText>
         </Pressable>
       </ThemedView>
-      <ThemedText
-        themeColor={
-          bufferAllotted !== null && statusLabel ? bufferStatusColor(status) : 'textSecondary'
-        }
-        type="small">
-        {bufferAllotted === null
-          ? 'Set a monthly buffer for ice cream, Maggi and random cravings.'
-          : (statusLabel ?? 'Ice cream, Maggi, random cravings — log it here.')}
-      </ThemedText>
-      <View style={styles.bufferInputRow}>
+
+      {bufferAllotted === null ? (
+        <ThemedText themeColor="textSecondary" type="small">
+          Set a monthly amount to keep treats separate from your fixed spending.
+        </ThemedText>
+      ) : (
+        <ThemedView style={styles.bufferStatusBlock}>
+          <ThemedView style={styles.bufferAmountRow}>
+            <ThemedText type="subtitle" themeColor={bufferStatusColor(status)} style={styles.bufferBigAmount}>
+              {formatINR(bufferRemaining ?? 0)}
+            </ThemedText>
+            <ThemedText themeColor="textSecondary" type="small">
+              left of {formatINR(bufferAllotted)}
+            </ThemedText>
+          </ThemedView>
+          <ProgressBar progress={progress} />
+          {statusLabel && (
+            <ThemedText type="small" themeColor={bufferStatusColor(status)}>
+              {statusLabel}
+            </ThemedText>
+          )}
+        </ThemedView>
+      )}
+
+      <ThemedView style={styles.bufferForm}>
         <FormField
-          label=""
+          label="Amount"
           value={amount}
           onChangeText={setAmount}
           keyboardType="decimal-pad"
-          placeholder="₹ amount"
-          style={styles.bufferAmountInput}
+          placeholder="₹ 0"
         />
-        <FormField label="" value={note} onChangeText={setNote} placeholder="What for? (optional)" style={styles.flex1} />
-      </View>
-      <Button title="Log buffer spend" onPress={handleSubmit} isLoading={isSaving} />
+        <FormField label="What for?" value={note} onChangeText={setNote} placeholder="Optional" />
+        <Button title="Add spend" onPress={handleSubmit} isLoading={isSaving} />
+      </ThemedView>
 
       {spends.length > 0 && (
         <ThemedView style={styles.spendHistory}>
+          <ThemedText type="smallBold" themeColor="textSecondary" style={styles.spendHistoryTitle}>
+            THIS MONTH
+          </ThemedText>
           {spends.map((spend) => (
             <Pressable
               key={spend.id}
@@ -420,21 +569,21 @@ function BufferSpendCard({
                 )
               }>
               <ThemedView style={styles.spendRow}>
-                <ThemedView style={styles.spendRowInfo}>
-                  <ThemedText type="small">{spend.note || 'Buffer spend'}</ThemedText>
-                  <ThemedText themeColor="textSecondary" type="small">
-                    {new Date(spend.logged_at).toLocaleDateString('en-IN', {
-                      day: 'numeric',
-                      month: 'short',
-                    })}
-                  </ThemedText>
-                </ThemedView>
-                <ThemedText type="small">{formatINR(Number(spend.amount))}</ThemedText>
+                <ThemedText themeColor="textSecondary" type="small" style={styles.spendDate}>
+                  {new Date(spend.logged_at).toLocaleDateString('en-IN', {
+                    day: 'numeric',
+                    month: 'short',
+                  })}
+                </ThemedText>
+                <ThemedText type="small" style={styles.spendNote} numberOfLines={1}>
+                  {spend.note || 'Buffer spend'}
+                </ThemedText>
+                <ThemedText type="smallBold">{formatINR(Number(spend.amount))}</ThemedText>
               </ThemedView>
             </Pressable>
           ))}
           <ThemedText themeColor="textSecondary" type="small" style={styles.spendHint}>
-            Long-press an entry to remove it.
+            Long-press to remove
           </ThemedText>
         </ThemedView>
       )}
@@ -497,7 +646,7 @@ function SetBufferModal({
 
   return (
     <Modal visible={visible} animationType="slide" presentationStyle="pageSheet" onRequestClose={onClose}>
-      <ThemedView style={styles.flex}>
+      <ThemedView type="background" style={styles.flex}>
         <SafeAreaView style={styles.flex}>
           <View style={styles.modalContent}>
             <ThemedText type="title" style={styles.modalTitle}>
@@ -576,19 +725,25 @@ const styles = StyleSheet.create({
   bufferCard: {
     borderRadius: Spacing.three,
     padding: Spacing.three,
-    gap: Spacing.two,
+    gap: Spacing.three,
   },
-  bufferHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
-  bufferInputRow: { flexDirection: 'row', gap: Spacing.two },
-  bufferAmountInput: { width: 110 },
-  spendHistory: { marginTop: Spacing.two, gap: Spacing.one },
+  bufferHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start' },
+  bufferHeadings: { gap: 2, flex: 1 },
+  bufferStatusBlock: { gap: Spacing.two },
+  bufferAmountRow: { flexDirection: 'row', alignItems: 'baseline', gap: Spacing.two },
+  bufferBigAmount: { fontSize: 28, lineHeight: 34 },
+  bufferForm: { gap: Spacing.two },
+  spendHistory: { gap: Spacing.one },
+  spendHistoryTitle: { marginBottom: Spacing.half },
   spendRow: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
-    paddingVertical: Spacing.one,
+    alignItems: 'center',
+    gap: Spacing.two,
+    paddingVertical: Spacing.one + 2,
   },
-  spendRowInfo: { gap: 1 },
-  spendHint: { textAlign: 'center', marginTop: Spacing.one },
+  spendDate: { width: 52 },
+  spendNote: { flex: 1 },
+  spendHint: { textAlign: 'center', marginTop: Spacing.half },
   modalContent: { flex: 1, padding: Spacing.four, gap: Spacing.three },
   modalTitle: { fontSize: 24, lineHeight: 30, marginBottom: Spacing.two },
   modalActions: { flexDirection: 'row', gap: Spacing.three, marginTop: Spacing.three },

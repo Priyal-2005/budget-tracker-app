@@ -51,7 +51,7 @@ export default function SignupScreen() {
 
   if (checkEmail) {
     return (
-      <ThemedView style={styles.flex}>
+      <ThemedView type="background" style={styles.flex}>
         <SafeAreaView style={[styles.flex, styles.checkEmailContainer]}>
           <ThemedText type="title" style={styles.title}>
             Check your email
@@ -70,7 +70,7 @@ export default function SignupScreen() {
   }
 
   return (
-    <ThemedView style={styles.flex}>
+    <ThemedView type="background" style={styles.flex}>
       <SafeAreaView style={styles.flex}>
         <KeyboardAvoidingView
           style={styles.flex}

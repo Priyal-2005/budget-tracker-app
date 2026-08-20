@@ -32,7 +32,7 @@ export default function LoginScreen() {
   };
 
   return (
-    <ThemedView style={styles.flex}>
+    <ThemedView type="background" style={styles.flex}>
       <SafeAreaView style={styles.flex}>
         <KeyboardAvoidingView
           style={styles.flex}
