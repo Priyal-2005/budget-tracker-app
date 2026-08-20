@@ -53,6 +53,26 @@ export function useRecurringItems() {
     [session, refresh]
   );
 
+  // Editing in place keeps the item's history attached to it — deleting and
+  // re-adding would orphan every past log when a price changes.
+  const updateItem = useCallback(
+    async (
+      id: string,
+      input: {
+        name: string;
+        category: ExpenseCategory;
+        default_amount: number;
+        frequency: ItemFrequency;
+      }
+    ) => {
+      const { error: updateError } = await supabase.from('recurring_items').update(input).eq('id', id);
+      if (updateError) return { error: updateError.message };
+      await refresh();
+      return { error: null };
+    },
+    [refresh]
+  );
+
   const toggleActive = useCallback(
     async (id: string, is_active: boolean) => {
       const { error: updateError } = await supabase.from('recurring_items').update({ is_active }).eq('id', id);
@@ -71,5 +91,5 @@ export function useRecurringItems() {
     [refresh]
   );
 
-  return { items, isLoading, error, refresh, addItem, toggleActive, removeItem };
+  return { items, isLoading, error, refresh, addItem, updateItem, toggleActive, removeItem };
 }
