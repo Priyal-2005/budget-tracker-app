@@ -7,9 +7,11 @@ import { Button } from '@/components/button';
 import { StatCard } from '@/components/stat-card';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
+import { TrendChart } from '@/components/trend-chart';
 import { Spacing } from '@/constants/theme';
 import { useMonthlyReport } from '@/hooks/use-monthly-report';
 import { useMonthlySummary } from '@/hooks/use-monthly-summary';
+import { TREND_MONTHS, useMonthlyTrend, type MonthTotals } from '@/hooks/use-monthly-trend';
 import { useProfile } from '@/hooks/use-profile';
 import { useTheme } from '@/hooks/use-theme';
 import { bufferStatusColor, bufferStatusLabel, getBufferStatus } from '@/lib/buffer-status';
@@ -17,11 +19,27 @@ import { formatINR } from '@/lib/currency';
 import { buildReportHtml } from '@/lib/report-html';
 import { shareReportHtml } from '@/lib/share-report';
 
+// Comparing against last month only makes sense once that month has something
+// in it — a first-ever month has nothing to be up or down against.
+function describeSpendChange(trend: MonthTotals[]) {
+  if (trend.length < 2) return null;
+  const thisMonth = trend[trend.length - 1];
+  const lastMonth = trend[trend.length - 2];
+  if (lastMonth.spend === 0) return null;
+
+  const difference = thisMonth.spend - lastMonth.spend;
+  if (difference === 0) return 'Spending exactly matches last month.';
+  return difference > 0
+    ? `${formatINR(difference)} more spent than by the end of last month.`
+    : `${formatINR(Math.abs(difference))} less spent than last month.`;
+}
+
 export default function HomeScreen() {
   const { summary, isLoading, error, refresh } = useMonthlySummary();
   const profile = useProfile();
   const theme = useTheme();
   const { build } = useMonthlyReport();
+  const { trend, refresh: refreshTrend } = useMonthlyTrend();
   const [isSharing, setIsSharing] = useState(false);
 
   const handleShare = async () => {
@@ -41,13 +59,15 @@ export default function HomeScreen() {
 
   const monthLabel = new Date().toLocaleDateString('en-IN', { month: 'long', year: 'numeric' });
   const bufferStatus = getBufferStatus(summary?.bufferRemaining ?? 0, summary?.bufferAllotted ?? 0);
+  const comparison = describeSpendChange(trend);
 
   // Tab screens stay mounted, so without this the totals keep showing whatever
   // was true when the tab first opened — stale as soon as anything is logged.
   useFocusEffect(
     useCallback(() => {
       refresh();
-    }, [refresh])
+      refreshTrend();
+    }, [refresh, refreshTrend])
   );
 
   return (
@@ -106,6 +126,18 @@ export default function HomeScreen() {
                 />
               </View>
 
+              <ThemedView style={styles.trendSection}>
+                <ThemedText type="smallBold" themeColor="textSecondary">
+                  LAST {TREND_MONTHS} MONTHS
+                </ThemedText>
+                <TrendChart trend={trend} />
+                {comparison && (
+                  <ThemedText type="small" themeColor="textSecondary" style={styles.comparison}>
+                    {comparison}
+                  </ThemedText>
+                )}
+              </ThemedView>
+
               <ThemedView style={styles.shareSection}>
                 <Button
                   title="Share this month's summary"
@@ -155,6 +187,11 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     gap: Spacing.three,
   },
+  trendSection: {
+    marginTop: Spacing.three,
+    gap: Spacing.two,
+  },
+  comparison: { textAlign: 'center' },
   shareSection: {
     marginTop: Spacing.three,
     gap: Spacing.two,
