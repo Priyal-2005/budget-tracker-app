@@ -7,8 +7,10 @@ export type BufferStatus = 'unset' | 'healthy' | 'low' | 'over';
 export const LOW_BUFFER_FRACTION = 0.2;
 
 export function getBufferStatus(remaining: number, allotted: number): BufferStatus {
-  if (allotted <= 0) return 'unset';
+  // Spending into the negative is over budget whether or not an allotment was
+  // ever set — otherwise a spend with no buffer set reads as perfectly fine.
   if (remaining < 0) return 'over';
+  if (allotted <= 0) return 'unset';
   if (remaining <= allotted * LOW_BUFFER_FRACTION) return 'low';
   return 'healthy';
 }
