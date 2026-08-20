@@ -1,21 +1,42 @@
 import { Link, useFocusEffect } from 'expo-router';
-import { useCallback } from 'react';
-import { Pressable, RefreshControl, ScrollView, StyleSheet, View } from 'react-native';
+import { useCallback, useState } from 'react';
+import { Alert, Pressable, RefreshControl, ScrollView, StyleSheet, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
+import { Button } from '@/components/button';
 import { StatCard } from '@/components/stat-card';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { Spacing } from '@/constants/theme';
+import { useMonthlyReport } from '@/hooks/use-monthly-report';
 import { useMonthlySummary } from '@/hooks/use-monthly-summary';
 import { useProfile } from '@/hooks/use-profile';
 import { useTheme } from '@/hooks/use-theme';
 import { formatINR } from '@/lib/currency';
+import { buildReportHtml } from '@/lib/report-html';
+import { shareReportHtml } from '@/lib/share-report';
 
 export default function HomeScreen() {
   const { summary, isLoading, error, refresh } = useMonthlySummary();
   const profile = useProfile();
   const theme = useTheme();
+  const { build } = useMonthlyReport();
+  const [isSharing, setIsSharing] = useState(false);
+
+  const handleShare = async () => {
+    setIsSharing(true);
+    const { report, error: reportError } = await build();
+    if (reportError || !report) {
+      setIsSharing(false);
+      Alert.alert('Could not build summary', reportError ?? 'Please try again.');
+      return;
+    }
+    const { error: shareError } = await shareReportHtml(
+      buildReportHtml(report, profile?.display_name ?? null)
+    );
+    setIsSharing(false);
+    if (shareError) Alert.alert('Could not share summary', shareError);
+  };
 
   const monthLabel = new Date().toLocaleDateString('en-IN', { month: 'long', year: 'numeric' });
 
@@ -79,6 +100,18 @@ export default function HomeScreen() {
                   valueColor={summary.savings < 0 ? 'danger' : 'success'}
                 />
               </View>
+
+              <ThemedView style={styles.shareSection}>
+                <Button
+                  title="Share this month's summary"
+                  variant="secondary"
+                  onPress={handleShare}
+                  isLoading={isSharing}
+                />
+                <ThemedText themeColor="textSecondary" type="small" style={styles.shareHint}>
+                  Makes a one-page PDF of this month — handy for showing your parents.
+                </ThemedText>
+              </ThemedView>
             </>
           )}
 
@@ -117,4 +150,9 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     gap: Spacing.three,
   },
+  shareSection: {
+    marginTop: Spacing.three,
+    gap: Spacing.two,
+  },
+  shareHint: { textAlign: 'center' },
 });
