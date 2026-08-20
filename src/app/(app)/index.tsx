@@ -12,6 +12,7 @@ import { useMonthlyReport } from '@/hooks/use-monthly-report';
 import { useMonthlySummary } from '@/hooks/use-monthly-summary';
 import { useProfile } from '@/hooks/use-profile';
 import { useTheme } from '@/hooks/use-theme';
+import { bufferStatusColor, bufferStatusLabel, getBufferStatus } from '@/lib/buffer-status';
 import { formatINR } from '@/lib/currency';
 import { buildReportHtml } from '@/lib/report-html';
 import { shareReportHtml } from '@/lib/share-report';
@@ -39,6 +40,7 @@ export default function HomeScreen() {
   };
 
   const monthLabel = new Date().toLocaleDateString('en-IN', { month: 'long', year: 'numeric' });
+  const bufferStatus = getBufferStatus(summary?.bufferRemaining ?? 0, summary?.bufferAllotted ?? 0);
 
   // Tab screens stay mounted, so without this the totals keep showing whatever
   // was true when the tab first opened — stale as soon as anything is logged.
@@ -91,8 +93,11 @@ export default function HomeScreen() {
                 <StatCard
                   label="Buffer remaining"
                   value={formatINR(summary.bufferRemaining)}
-                  valueColor={summary.bufferRemaining < 0 ? 'danger' : 'primary'}
-                  caption={`of ${formatINR(summary.bufferAllotted)} allotted`}
+                  valueColor={bufferStatusColor(bufferStatus)}
+                  caption={
+                    bufferStatusLabel(bufferStatus) ??
+                    `of ${formatINR(summary.bufferAllotted)} allotted`
+                  }
                 />
                 <StatCard
                   label="Savings so far"

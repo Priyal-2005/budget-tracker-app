@@ -12,7 +12,9 @@ import { useBuffer } from '@/hooks/use-buffer';
 import { useLogData } from '@/hooks/use-log-data';
 import { useMonthlySummary } from '@/hooks/use-monthly-summary';
 import { useTheme } from '@/hooks/use-theme';
+import { bufferStatusColor, bufferStatusLabel, getBufferStatus } from '@/lib/buffer-status';
 import { formatINR } from '@/lib/currency';
+import { notifyBufferStatus } from '@/lib/notify';
 import { CATEGORY_LABELS, type RecurringItem } from '@/types/database';
 
 type WeeklyState = Record<string, { checked: boolean; amount: string }>;
@@ -265,6 +267,9 @@ function BufferSpendCard({
   const [isSaving, setIsSaving] = useState(false);
   const [allotmentModalVisible, setAllotmentModalVisible] = useState(false);
 
+  const status = getBufferStatus(bufferRemaining ?? 0, bufferAllotted ?? 0);
+  const statusLabel = bufferStatusLabel(status);
+
   const handleSubmit = async () => {
     const parsed = Number(amount);
     if (!amount || Number.isNaN(parsed) || parsed <= 0) {
@@ -276,10 +281,26 @@ function BufferSpendCard({
     setIsSaving(false);
     if (error) {
       Alert.alert('Error', error);
-    } else {
-      setAmount('');
-      setNote('');
-      await onLogged();
+      return;
+    }
+    setAmount('');
+    setNote('');
+    await onLogged();
+
+    // Warn on the spend that crosses the line, not on every later one.
+    if (bufferAllotted !== null && bufferRemaining !== undefined) {
+      const before = getBufferStatus(bufferRemaining, bufferAllotted);
+      const after = getBufferStatus(bufferRemaining - parsed, bufferAllotted);
+      if (after !== before && (after === 'low' || after === 'over')) {
+        const left = bufferRemaining - parsed;
+        notifyBufferStatus(after, left);
+        Alert.alert(
+          after === 'over' ? 'Over your buffer' : 'Buffer running low',
+          after === 'over'
+            ? `That puts you ${formatINR(Math.abs(left))} past this month's buffer.`
+            : `${formatINR(left)} left in this month's buffer.`
+        );
+      }
     }
   };
 
@@ -293,16 +314,18 @@ function BufferSpendCard({
               Set buffer
             </ThemedText>
           ) : (
-            <ThemedText type="small" themeColor={(bufferRemaining ?? 0) < 0 ? 'danger' : 'textSecondary'}>
+            <ThemedText
+              type="small"
+              themeColor={status === 'healthy' ? 'textSecondary' : bufferStatusColor(status)}>
               {formatINR(bufferRemaining ?? 0)} of {formatINR(bufferAllotted)} left
             </ThemedText>
           )}
         </Pressable>
       </ThemedView>
-      <ThemedText themeColor="textSecondary" type="small">
+      <ThemedText themeColor={statusLabel ? bufferStatusColor(status) : 'textSecondary'} type="small">
         {bufferAllotted === null
           ? 'Set a monthly buffer for ice cream, Maggi and random cravings.'
-          : 'Ice cream, Maggi, random cravings — log it here.'}
+          : (statusLabel ?? 'Ice cream, Maggi, random cravings — log it here.')}
       </ThemedText>
       <View style={styles.bufferInputRow}>
         <FormField
