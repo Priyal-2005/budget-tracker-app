@@ -20,8 +20,16 @@ import { CATEGORY_LABELS, type RecurringItem } from '@/types/database';
 type WeeklyState = Record<string, { checked: boolean; amount: string }>;
 
 export default function LogScreen() {
-  const { weeklyItems, monthlyItems, loggedMonthlyItemIds, error, refresh, logItems, logBufferSpend } =
-    useLogData();
+  const {
+    weeklyItems,
+    monthlyItems,
+    loggedMonthlyItemIds,
+    loggedWeeklyItemIds,
+    error,
+    refresh,
+    logItems,
+    logBufferSpend,
+  } = useLogData();
   const { summary, refresh: refreshSummary } = useMonthlySummary();
   const { allotted, refresh: refreshBuffer, setAllotment } = useBuffer();
   const theme = useTheme();
@@ -49,8 +57,12 @@ export default function LogScreen() {
     });
   }, [weeklyItems]);
 
+  // Anything already logged this week is excluded, so tapping the button twice
+  // cannot quietly double-count the week's shop.
+  const pendingWeeklyItems = weeklyItems.filter((item) => !loggedWeeklyItemIds.has(item.id));
+
   const handleLogWeek = async () => {
-    const entries = weeklyItems
+    const entries = pendingWeeklyItems
       .filter((item) => weeklyState[item.id]?.checked)
       .map((item) => {
         const amount = Number(weeklyState[item.id]?.amount);
@@ -104,17 +116,26 @@ export default function LogScreen() {
                 No weekly items yet. Add some from the Items tab (milk, fruits, veggies…).
               </ThemedText>
             ) : (
-              weeklyItems.map((item) => (
-                <WeeklyItemRow
-                  key={item.id}
-                  item={item}
-                  state={weeklyState[item.id] ?? { checked: true, amount: String(item.default_amount) }}
-                  onChange={(next) => setWeeklyState((prev) => ({ ...prev, [item.id]: next }))}
-                />
-              ))
+              weeklyItems.map((item) =>
+                loggedWeeklyItemIds.has(item.id) ? (
+                  <LoggedItemRow key={item.id} item={item} />
+                ) : (
+                  <WeeklyItemRow
+                    key={item.id}
+                    item={item}
+                    state={weeklyState[item.id] ?? { checked: true, amount: String(item.default_amount) }}
+                    onChange={(next) => setWeeklyState((prev) => ({ ...prev, [item.id]: next }))}
+                  />
+                )
+              )
             )}
-            {weeklyItems.length > 0 && (
+            {pendingWeeklyItems.length > 0 && (
               <Button title="Log this week's batch" onPress={handleLogWeek} isLoading={isSubmittingWeekly} />
+            )}
+            {weeklyItems.length > 0 && pendingWeeklyItems.length === 0 && (
+              <ThemedText themeColor="success" type="small">
+                This week&apos;s shop is logged.
+              </ThemedText>
             )}
           </ThemedView>
 
@@ -185,6 +206,22 @@ function WeeklyItemRow({
           { borderColor: theme.border, color: theme.text, opacity: state.checked ? 1 : 0.4 },
         ]}
       />
+    </ThemedView>
+  );
+}
+
+function LoggedItemRow({ item }: { item: RecurringItem }) {
+  return (
+    <ThemedView style={styles.itemRow}>
+      <ThemedView style={styles.itemRowInfo}>
+        <ThemedText type="default">{item.name}</ThemedText>
+        <ThemedText themeColor="textSecondary" type="small">
+          {CATEGORY_LABELS[item.category]}
+        </ThemedText>
+      </ThemedView>
+      <ThemedText type="small" themeColor="success">
+        ✓ Logged
+      </ThemedText>
     </ThemedView>
   );
 }
@@ -322,7 +359,11 @@ function BufferSpendCard({
           )}
         </Pressable>
       </ThemedView>
-      <ThemedText themeColor={statusLabel ? bufferStatusColor(status) : 'textSecondary'} type="small">
+      <ThemedText
+        themeColor={
+          bufferAllotted !== null && statusLabel ? bufferStatusColor(status) : 'textSecondary'
+        }
+        type="small">
         {bufferAllotted === null
           ? 'Set a monthly buffer for ice cream, Maggi and random cravings.'
           : (statusLabel ?? 'Ice cream, Maggi, random cravings — log it here.')}

@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useState } from 'react';
 
 import { useAuth } from '@/contexts/auth-context';
-import { getMonthRange, todayISODate } from '@/lib/date';
+import { getMonthRange, getWeekRange, todayISODate } from '@/lib/date';
 import { supabase } from '@/lib/supabase';
 import type { ExpenseCategory, RecurringItem } from '@/types/database';
 
@@ -10,6 +10,7 @@ export function useLogData() {
   const [weeklyItems, setWeeklyItems] = useState<RecurringItem[]>([]);
   const [monthlyItems, setMonthlyItems] = useState<RecurringItem[]>([]);
   const [loggedMonthlyItemIds, setLoggedMonthlyItemIds] = useState<Set<string>>(new Set());
+  const [loggedWeeklyItemIds, setLoggedWeeklyItemIds] = useState<Set<string>>(new Set());
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -18,7 +19,9 @@ export function useLogData() {
     setIsLoading(true);
     const { start, end } = getMonthRange();
 
-    const [itemsRes, monthLogsRes] = await Promise.all([
+    const week = getWeekRange();
+
+    const [itemsRes, monthLogsRes, weekLogsRes] = await Promise.all([
       supabase.from('recurring_items').select('*').eq('is_active', true).order('name'),
       supabase
         .from('expense_logs')
@@ -26,9 +29,15 @@ export function useLogData() {
         .not('recurring_item_id', 'is', null)
         .gte('logged_at', start)
         .lte('logged_at', end),
+      supabase
+        .from('expense_logs')
+        .select('recurring_item_id')
+        .not('recurring_item_id', 'is', null)
+        .gte('logged_at', week.start)
+        .lte('logged_at', week.end),
     ]);
 
-    const firstError = itemsRes.error ?? monthLogsRes.error;
+    const firstError = itemsRes.error ?? monthLogsRes.error ?? weekLogsRes.error;
     if (firstError) {
       setError(firstError.message);
       setIsLoading(false);
@@ -39,6 +48,7 @@ export function useLogData() {
     setWeeklyItems(allItems.filter((item) => item.frequency === 'weekly'));
     setMonthlyItems(allItems.filter((item) => item.frequency === 'monthly'));
     setLoggedMonthlyItemIds(new Set((monthLogsRes.data ?? []).map((row) => row.recurring_item_id as string)));
+    setLoggedWeeklyItemIds(new Set((weekLogsRes.data ?? []).map((row) => row.recurring_item_id as string)));
     setError(null);
     setIsLoading(false);
   }, [session]);
@@ -84,6 +94,7 @@ export function useLogData() {
     weeklyItems,
     monthlyItems,
     loggedMonthlyItemIds,
+    loggedWeeklyItemIds,
     isLoading,
     error,
     refresh,
