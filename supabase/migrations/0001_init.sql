@@ -4,7 +4,7 @@
 -- ── Enums ─────────────────────────────────────────────────────────────────
 
 create type expense_category as enum (
-  'hostel_rent', 'mess', 'groceries', 'medicines', 'stationery',
+  'groceries', 'medicines', 'stationery',
   'subscriptions', 'travel', 'canteen', 'other'
 );
 

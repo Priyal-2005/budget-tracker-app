@@ -1,6 +1,4 @@
 export type ExpenseCategory =
-  | 'hostel_rent'
-  | 'mess'
   | 'groceries'
   | 'medicines'
   | 'stationery'
@@ -73,8 +71,6 @@ export interface SavingsGoal {
 }
 
 export const CATEGORY_LABELS: Record<ExpenseCategory, string> = {
-  hostel_rent: 'Hostel/PG Rent',
-  mess: 'Mess Fees',
   groceries: 'Groceries',
   medicines: 'Medicines',
   stationery: 'Stationery',
