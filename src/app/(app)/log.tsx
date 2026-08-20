@@ -9,13 +9,14 @@ import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { Spacing } from '@/constants/theme';
 import { useBuffer } from '@/hooks/use-buffer';
+import { useBufferSpends } from '@/hooks/use-buffer-spends';
 import { useLogData } from '@/hooks/use-log-data';
 import { useMonthlySummary } from '@/hooks/use-monthly-summary';
 import { useTheme } from '@/hooks/use-theme';
 import { bufferStatusColor, bufferStatusLabel, getBufferStatus } from '@/lib/buffer-status';
 import { formatINR } from '@/lib/currency';
 import { notifyBufferStatus } from '@/lib/notify';
-import { CATEGORY_LABELS, type RecurringItem } from '@/types/database';
+import { CATEGORY_LABELS, type ExpenseLog, type RecurringItem } from '@/types/database';
 
 type WeeklyState = Record<string, { checked: boolean; amount: string }>;
 
@@ -32,6 +33,7 @@ export default function LogScreen() {
   } = useLogData();
   const { summary, refresh: refreshSummary } = useMonthlySummary();
   const { allotted, refresh: refreshBuffer, setAllotment } = useBuffer();
+  const { entries: bufferSpends, refresh: refreshBufferSpends, removeSpend } = useBufferSpends();
   const theme = useTheme();
 
   // Items added on the Items tab, and buffer spent elsewhere, need to show up
@@ -41,7 +43,8 @@ export default function LogScreen() {
       refresh();
       refreshSummary();
       refreshBuffer();
-    }, [refresh, refreshSummary, refreshBuffer])
+      refreshBufferSpends();
+    }, [refresh, refreshSummary, refreshBuffer, refreshBufferSpends])
   );
 
   const [weeklyState, setWeeklyState] = useState<WeeklyState>({});
@@ -111,7 +114,16 @@ export default function LogScreen() {
             bufferAllotted={allotted}
             onSetAllotment={setAllotment}
             onSubmit={logBufferSpend}
-            onLogged={refreshSummary}
+            onLogged={async () => {
+              await refreshSummary();
+              await refreshBufferSpends();
+            }}
+            spends={bufferSpends}
+            onRemoveSpend={async (id) => {
+              const { error: removeError } = await removeSpend(id);
+              if (removeError) Alert.alert('Error', removeError);
+              else await refreshSummary();
+            }}
           />
 
           <ThemedView style={styles.section}>
@@ -299,12 +311,16 @@ function BufferSpendCard({
   onSetAllotment,
   onSubmit,
   onLogged,
+  spends,
+  onRemoveSpend,
 }: {
   bufferRemaining: number | undefined;
   bufferAllotted: number | null;
   onSetAllotment: (amount: number) => Promise<{ error: string | null }>;
   onSubmit: (amount: number, note: string) => Promise<{ error: string | null }>;
   onLogged: () => Promise<void>;
+  spends: ExpenseLog[];
+  onRemoveSpend: (id: string) => Promise<void>;
 }) {
   const [amount, setAmount] = useState('');
   const [note, setNote] = useState('');
@@ -387,6 +403,41 @@ function BufferSpendCard({
         <FormField label="" value={note} onChangeText={setNote} placeholder="What for? (optional)" style={styles.flex1} />
       </View>
       <Button title="Log buffer spend" onPress={handleSubmit} isLoading={isSaving} />
+
+      {spends.length > 0 && (
+        <ThemedView style={styles.spendHistory}>
+          {spends.map((spend) => (
+            <Pressable
+              key={spend.id}
+              onLongPress={() =>
+                Alert.alert(
+                  'Remove spend',
+                  `Remove ${formatINR(Number(spend.amount))}${spend.note ? ` (${spend.note})` : ''}?`,
+                  [
+                    { text: 'Cancel', style: 'cancel' },
+                    { text: 'Remove', style: 'destructive', onPress: () => onRemoveSpend(spend.id) },
+                  ]
+                )
+              }>
+              <ThemedView style={styles.spendRow}>
+                <ThemedView style={styles.spendRowInfo}>
+                  <ThemedText type="small">{spend.note || 'Buffer spend'}</ThemedText>
+                  <ThemedText themeColor="textSecondary" type="small">
+                    {new Date(spend.logged_at).toLocaleDateString('en-IN', {
+                      day: 'numeric',
+                      month: 'short',
+                    })}
+                  </ThemedText>
+                </ThemedView>
+                <ThemedText type="small">{formatINR(Number(spend.amount))}</ThemedText>
+              </ThemedView>
+            </Pressable>
+          ))}
+          <ThemedText themeColor="textSecondary" type="small" style={styles.spendHint}>
+            Long-press an entry to remove it.
+          </ThemedText>
+        </ThemedView>
+      )}
 
       <SetBufferModal
         visible={allotmentModalVisible}
@@ -530,6 +581,14 @@ const styles = StyleSheet.create({
   bufferHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
   bufferInputRow: { flexDirection: 'row', gap: Spacing.two },
   bufferAmountInput: { width: 110 },
+  spendHistory: { marginTop: Spacing.two, gap: Spacing.one },
+  spendRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    paddingVertical: Spacing.one,
+  },
+  spendRowInfo: { gap: 1 },
+  spendHint: { textAlign: 'center', marginTop: Spacing.one },
   modalContent: { flex: 1, padding: Spacing.four, gap: Spacing.three },
   modalTitle: { fontSize: 24, lineHeight: 30, marginBottom: Spacing.two },
   modalActions: { flexDirection: 'row', gap: Spacing.three, marginTop: Spacing.three },
