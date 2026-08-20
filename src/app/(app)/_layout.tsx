@@ -1,6 +1,17 @@
+import Ionicons from '@expo/vector-icons/Ionicons';
 import { Tabs } from 'expo-router';
+import type { ColorValue } from 'react-native';
+
+type IoniconName = React.ComponentProps<typeof Ionicons>['name'];
 
 import { useTheme } from '@/hooks/use-theme';
+
+// Filled when active, outline when not — the usual iOS/Android tab convention.
+function tabIcon(active: IoniconName, inactive: IoniconName) {
+  return ({ color, focused, size }: { color: ColorValue; focused: boolean; size: number }) => (
+    <Ionicons name={focused ? active : inactive} size={size} color={color as string} />
+  );
+}
 
 export default function AppTabsLayout() {
   const theme = useTheme();
@@ -13,11 +24,26 @@ export default function AppTabsLayout() {
         tabBarInactiveTintColor: theme.textSecondary,
         tabBarStyle: { backgroundColor: theme.background, borderTopColor: theme.border },
       }}>
-      <Tabs.Screen name="index" options={{ title: 'Home' }} />
-      <Tabs.Screen name="income" options={{ title: 'Income' }} />
-      <Tabs.Screen name="items" options={{ title: 'Items' }} />
-      <Tabs.Screen name="log" options={{ title: 'Log' }} />
-      <Tabs.Screen name="goals" options={{ title: 'Goals' }} />
+      <Tabs.Screen
+        name="index"
+        options={{ title: 'Home', tabBarIcon: tabIcon('home', 'home-outline') }}
+      />
+      <Tabs.Screen
+        name="income"
+        options={{ title: 'Income', tabBarIcon: tabIcon('wallet', 'wallet-outline') }}
+      />
+      <Tabs.Screen
+        name="items"
+        options={{ title: 'Items', tabBarIcon: tabIcon('repeat', 'repeat-outline') }}
+      />
+      <Tabs.Screen
+        name="log"
+        options={{ title: 'Log', tabBarIcon: tabIcon('add-circle', 'add-circle-outline') }}
+      />
+      <Tabs.Screen
+        name="goals"
+        options={{ title: 'Goals', tabBarIcon: tabIcon('flag', 'flag-outline') }}
+      />
       {/* Reached from the Home header rather than the tab bar, to keep the bar
           to the five screens used day to day. */}
       <Tabs.Screen name="settings" options={{ href: null }} />
