@@ -1,4 +1,5 @@
-import { StyleSheet } from 'react-native';
+import { router } from 'expo-router';
+import { Pressable, StyleSheet } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { Button } from '@/components/button';
@@ -16,6 +17,12 @@ export default function SettingsScreen() {
     <ThemedView style={styles.flex}>
       <SafeAreaView style={styles.flex}>
         <ThemedView style={styles.container}>
+          <Pressable onPress={() => router.back()} accessibilityRole="button">
+            <ThemedText type="smallBold" themeColor="primary">
+              ‹ Back
+            </ThemedText>
+          </Pressable>
+
           <ThemedText type="title" style={styles.title}>
             Settings
           </ThemedText>

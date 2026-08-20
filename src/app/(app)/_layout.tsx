@@ -18,7 +18,9 @@ export default function AppTabsLayout() {
       <Tabs.Screen name="items" options={{ title: 'Items' }} />
       <Tabs.Screen name="log" options={{ title: 'Log' }} />
       <Tabs.Screen name="goals" options={{ title: 'Goals' }} />
-      <Tabs.Screen name="settings" options={{ title: 'Settings' }} />
+      {/* Reached from the Home header rather than the tab bar, to keep the bar
+          to the five screens used day to day. */}
+      <Tabs.Screen name="settings" options={{ href: null }} />
     </Tabs>
   );
 }

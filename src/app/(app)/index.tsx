@@ -1,6 +1,6 @@
-import { useFocusEffect } from 'expo-router';
+import { Link, useFocusEffect } from 'expo-router';
 import { useCallback } from 'react';
-import { RefreshControl, ScrollView, StyleSheet, View } from 'react-native';
+import { Pressable, RefreshControl, ScrollView, StyleSheet, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { StatCard } from '@/components/stat-card';
@@ -9,11 +9,13 @@ import { ThemedView } from '@/components/themed-view';
 import { Spacing } from '@/constants/theme';
 import { useMonthlySummary } from '@/hooks/use-monthly-summary';
 import { useProfile } from '@/hooks/use-profile';
+import { useTheme } from '@/hooks/use-theme';
 import { formatINR } from '@/lib/currency';
 
 export default function HomeScreen() {
   const { summary, isLoading, error, refresh } = useMonthlySummary();
   const profile = useProfile();
+  const theme = useTheme();
 
   const monthLabel = new Date().toLocaleDateString('en-IN', { month: 'long', year: 'numeric' });
 
@@ -32,10 +34,23 @@ export default function HomeScreen() {
           contentContainerStyle={styles.container}
           refreshControl={<RefreshControl refreshing={isLoading} onRefresh={refresh} />}>
           <ThemedView style={styles.header}>
-            <ThemedText type="title" style={styles.title}>
-              {profile?.display_name ? `Hi, ${profile.display_name}` : 'Home'}
-            </ThemedText>
-            <ThemedText themeColor="textSecondary">{monthLabel}</ThemedText>
+            <ThemedView style={styles.headerText}>
+              <ThemedText type="title" style={styles.title}>
+                {profile?.display_name ? `Hi, ${profile.display_name}` : 'Home'}
+              </ThemedText>
+              <ThemedText themeColor="textSecondary">{monthLabel}</ThemedText>
+            </ThemedView>
+            <Link href="/(app)/settings" asChild>
+              <Pressable
+                accessibilityRole="button"
+                accessibilityLabel="Settings"
+                style={StyleSheet.flatten([
+                  styles.settingsButton,
+                  { backgroundColor: theme.backgroundElement },
+                ])}>
+                <ThemedText type="smallBold">Settings</ThemedText>
+              </Pressable>
+            </Link>
           </ThemedView>
 
           {error && (
@@ -85,8 +100,17 @@ const styles = StyleSheet.create({
     gap: Spacing.three,
   },
   header: {
-    gap: Spacing.half,
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'flex-start',
+    gap: Spacing.three,
     marginBottom: Spacing.two,
+  },
+  headerText: { gap: Spacing.half, flex: 1 },
+  settingsButton: {
+    paddingHorizontal: Spacing.three,
+    paddingVertical: Spacing.two,
+    borderRadius: Spacing.two,
   },
   title: { fontSize: 28, lineHeight: 34 },
   row: {
