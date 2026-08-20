@@ -1,7 +1,7 @@
-import type { MonthlyReport } from '@/hooks/use-monthly-report';
+import type { MonthlyReport, ReportEntry } from '@/hooks/use-monthly-report';
 import { CATEGORY_LABELS, INCOME_SOURCE_LABELS } from '@/types/database';
 
-// Goal names are user-entered and go straight into the report markup.
+// Item names and spend notes are user-entered and go straight into the markup.
 function escapeHtml(value: string) {
   return value
     .replace(/&/g, '&amp;')
@@ -21,6 +21,26 @@ function row(label: string, amount: number) {
   return `<tr><td>${escapeHtml(label)}</td><td class="amount">${rupees(amount)}</td></tr>`;
 }
 
+function shortDate(isoDate: string) {
+  return new Date(isoDate).toLocaleDateString('en-IN', { day: 'numeric', month: 'short' });
+}
+
+function entryRows(entries: ReportEntry[], showCategory: boolean) {
+  return entries
+    .map(
+      (entry) => `<tr>
+        <td class="date">${escapeHtml(shortDate(entry.loggedAt))}</td>
+        <td>${escapeHtml(entry.label)}${
+          showCategory
+            ? `<span class="muted"> · ${escapeHtml(CATEGORY_LABELS[entry.category])}</span>`
+            : ''
+        }</td>
+        <td class="amount">${rupees(entry.amount)}</td>
+      </tr>`
+    )
+    .join('');
+}
+
 export function buildReportHtml(report: MonthlyReport, displayName: string | null) {
   const incomeRows = report.incomeBySource
     .map((entry) => row(INCOME_SOURCE_LABELS[entry.source], entry.amount))
@@ -28,22 +48,6 @@ export function buildReportHtml(report: MonthlyReport, displayName: string | nul
 
   const expenseRows = report.expensesByCategory
     .map((entry) => row(CATEGORY_LABELS[entry.category], entry.amount))
-    .join('');
-
-  const goalRows = report.goals
-    .map((goal) => {
-      const saved = Number(goal.current_amount);
-      const target = Number(goal.target_amount);
-      const percent = target === 0 ? 0 : Math.min(100, Math.round((saved / target) * 100));
-      return `
-        <div class="goal">
-          <div class="goal-head">
-            <span>${escapeHtml(goal.name)}</span>
-            <span class="muted">${rupees(saved)} of ${rupees(target)}</span>
-          </div>
-          <div class="bar"><div class="bar-fill" style="width:${percent}%"></div></div>
-        </div>`;
-    })
     .join('');
 
   return `<!DOCTYPE html>
@@ -62,6 +66,8 @@ export function buildReportHtml(report: MonthlyReport, displayName: string | nul
       }
       h1 { font-size: 24px; margin: 0 0 4px; }
       h2 { font-size: 14px; text-transform: uppercase; letter-spacing: 0.04em; color: #60646c; margin: 28px 0 8px; }
+      h3 { font-size: 12px; text-transform: uppercase; letter-spacing: 0.04em; color: #90949c; margin: 18px 0 6px; font-weight: 600; }
+      td.date { color: #90949c; white-space: nowrap; width: 62px; }
       .muted { color: #60646c; }
       .summary { display: flex; gap: 12px; margin-top: 20px; flex-wrap: wrap; }
       .stat { flex: 1; min-width: 130px; border: 1px solid #e0e1e6; border-radius: 10px; padding: 12px; }
@@ -73,10 +79,6 @@ export function buildReportHtml(report: MonthlyReport, displayName: string | nul
       td { padding: 7px 0; border-bottom: 1px solid #eeeff2; font-size: 14px; }
       td.amount { text-align: right; font-variant-numeric: tabular-nums; }
       tr.total td { font-weight: 600; border-bottom: none; border-top: 2px solid #16181d; }
-      .goal { margin-bottom: 12px; }
-      .goal-head { display: flex; justify-content: space-between; font-size: 14px; margin-bottom: 5px; }
-      .bar { height: 7px; background: #eeeff2; border-radius: 4px; overflow: hidden; }
-      .bar-fill { height: 100%; background: #208aef; }
       footer { margin-top: 32px; font-size: 11px; color: #90949c; }
     </style>
   </head>
@@ -121,6 +123,17 @@ export function buildReportHtml(report: MonthlyReport, displayName: string | nul
         : ''
     }
 
+    ${
+      report.fixedEntries.length > 0
+        ? `<h2>Everything bought</h2>
+    <table>${entryRows(report.fixedEntries, true)}
+      <tr class="total"><td colspan="2">Total</td><td class="amount">${rupees(
+        report.totalFixed
+      )}</td></tr>
+    </table>`
+        : ''
+    }
+
     <h2>Buffer</h2>
     <table>
       ${row('Set aside for the month', report.bufferAllotted)}
@@ -130,7 +143,12 @@ export function buildReportHtml(report: MonthlyReport, displayName: string | nul
       )}</td></tr>
     </table>
 
-    ${report.goals.length > 0 ? `<h2>Savings goals</h2>${goalRows}` : ''}
+    ${
+      report.bufferEntries.length > 0
+        ? `<h3>What the buffer went on</h3>
+    <table>${entryRows(report.bufferEntries, false)}</table>`
+        : ''
+    }
 
     <footer>Generated from my budget app on ${escapeHtml(
       new Date().toLocaleDateString('en-IN', { day: 'numeric', month: 'long', year: 'numeric' })
