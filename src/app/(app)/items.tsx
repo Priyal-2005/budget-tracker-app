@@ -4,11 +4,12 @@ import { Alert, Modal, Pressable, SectionList, StyleSheet, View } from 'react-na
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { Button } from '@/components/button';
+import { Card } from '@/components/card';
 import { ChipSelect } from '@/components/chip-select';
 import { FormField } from '@/components/form-field';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
-import { Spacing } from '@/constants/theme';
+import { Radius, Spacing } from '@/constants/theme';
 import { useRecurringItems } from '@/hooks/use-recurring-items';
 import { useTheme } from '@/hooks/use-theme';
 import { formatINR } from '@/lib/currency';
@@ -74,25 +75,26 @@ export default function ItemsScreen() {
     <ThemedView type="background" style={styles.flex}>
       <SafeAreaView style={styles.flex}>
         <ThemedView style={styles.header}>
-          <ThemedText type="title" style={styles.title}>
-            Recurring Items
-          </ThemedText>
-          <Pressable onPress={openAdd} style={[styles.addButton, { backgroundColor: theme.primary }]}>
-            <ThemedText type="smallBold" style={{ color: '#ffffff' }}>
-              + Add
-            </ThemedText>
+          <ThemedText type="screenTitle">Recurring Items</ThemedText>
+          <Pressable
+            onPress={openAdd}
+            style={({ pressed }) => [
+              styles.addButton,
+              { backgroundColor: theme.primary, opacity: pressed ? 0.9 : 1 },
+            ]}>
+            <ThemedText style={styles.addButtonLabel}>+ Add</ThemedText>
           </Pressable>
         </ThemedView>
 
         {error && (
-          <ThemedText themeColor="danger" type="small" style={styles.padded}>
+          <ThemedText themeColor="danger" type="caption" style={styles.padded}>
             {error}
           </ThemedText>
         )}
 
         {!isLoading && items.length === 0 && !error && (
           <ThemedView style={styles.padded}>
-            <ThemedText themeColor="textSecondary">
+            <ThemedText type="caption" themeColor="textSecondary">
               No items yet. Add the things you buy every week or month — milk, fruits, medicines — so your
               Sunday logging is just a tap.
             </ThemedText>
@@ -104,28 +106,37 @@ export default function ItemsScreen() {
           keyExtractor={(item) => item.id}
           contentContainerStyle={styles.listContent}
           renderSectionHeader={({ section }) => (
-            <ThemedText type="smallBold" themeColor="textSecondary" style={styles.sectionHeader}>
-              {section.title.toUpperCase()}
+            <ThemedText type="sectionLabel" themeColor="textMuted" style={styles.sectionHeader}>
+              {section.title}
             </ThemedText>
           )}
           renderItem={({ item }) => (
             <Pressable onPress={() => openEdit(item)} onLongPress={() => handleRemove(item)}>
-              <ThemedView type="backgroundElement" style={[styles.row, !item.is_active && styles.rowInactive]}>
+              <Card style={[styles.row, !item.is_active && styles.rowInactive]}>
                 <ThemedView style={styles.rowInfo}>
-                  <ThemedText type="smallBold">{item.name}</ThemedText>
-                  <ThemedText themeColor="textSecondary" type="small">
+                  <ThemedText style={styles.rowTitle}>{item.name}</ThemedText>
+                  <ThemedText type="caption" themeColor="textSecondary">
                     {CATEGORY_LABELS[item.category]}
                   </ThemedText>
                 </ThemedView>
                 <ThemedView style={styles.rowRight}>
-                  <ThemedText type="smallBold">{formatINR(item.default_amount)}</ThemedText>
+                  <ThemedText style={styles.rowAmount}>{formatINR(item.default_amount)}</ThemedText>
                   <Pressable onPress={() => toggleActive(item.id, !item.is_active)}>
-                    <ThemedText type="small" themeColor={item.is_active ? 'success' : 'textSecondary'}>
-                      {item.is_active ? 'Active' : 'Paused'}
-                    </ThemedText>
+                    <ThemedView
+                      style={[
+                        styles.statusPill,
+                        { backgroundColor: item.is_active ? theme.primarySoft : theme.backgroundSelected },
+                      ]}>
+                      <ThemedText
+                        type="caption"
+                        themeColor={item.is_active ? 'primary' : 'textSecondary'}
+                        style={styles.statusLabel}>
+                        {item.is_active ? 'Active' : 'Paused'}
+                      </ThemedText>
+                    </ThemedView>
                   </Pressable>
                 </ThemedView>
-              </ThemedView>
+              </Card>
             </Pressable>
           )}
         />
@@ -216,9 +227,7 @@ function ItemModal({
       <ThemedView type="background" style={styles.flex}>
         <SafeAreaView style={styles.flex}>
           <View style={styles.modalContent}>
-            <ThemedText type="title" style={styles.modalTitle}>
-              {item ? 'Edit item' : 'Add item'}
-            </ThemedText>
+            <ThemedText style={styles.modalTitle}>{item ? 'Edit item' : 'Add item'}</ThemedText>
 
             <FormField label="Name" value={name} onChangeText={setName} placeholder="e.g. Milk" />
             <FormField
@@ -230,17 +239,21 @@ function ItemModal({
             />
 
             <ThemedView style={styles.fieldGroup}>
-              <ThemedText type="smallBold">Frequency</ThemedText>
+              <ThemedText type="caption" themeColor="textSecondary" style={styles.fieldLabel}>
+                Frequency
+              </ThemedText>
               <ChipSelect options={FREQUENCY_OPTIONS} value={frequency} onChange={setFrequency} />
             </ThemedView>
 
             <ThemedView style={styles.fieldGroup}>
-              <ThemedText type="smallBold">Category</ThemedText>
+              <ThemedText type="caption" themeColor="textSecondary" style={styles.fieldLabel}>
+                Category
+              </ThemedText>
               <ChipSelect options={CATEGORY_OPTIONS} value={category} onChange={setCategory} />
             </ThemedView>
 
             {error && (
-              <ThemedText themeColor="danger" type="small">
+              <ThemedText themeColor="danger" type="caption">
                 {error}
               </ThemedText>
             )}
@@ -264,30 +277,38 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     alignItems: 'center',
     padding: Spacing.four,
-    paddingBottom: Spacing.two,
+    paddingBottom: Spacing.three,
   },
-  title: { fontSize: 28, lineHeight: 34 },
   addButton: {
     paddingHorizontal: Spacing.three,
-    paddingVertical: Spacing.two,
-    borderRadius: Spacing.two,
+    height: 40,
+    borderRadius: Radius.small,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
+  addButtonLabel: { color: '#ffffff', fontSize: 15, fontWeight: '700' },
   padded: { paddingHorizontal: Spacing.four },
-  listContent: { paddingHorizontal: Spacing.four, paddingBottom: Spacing.six, gap: Spacing.two },
+  listContent: { paddingHorizontal: Spacing.four, paddingBottom: Spacing.six, gap: Spacing.two + 2 },
   sectionHeader: { marginTop: Spacing.three, marginBottom: Spacing.one },
   row: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    padding: Spacing.three,
-    borderRadius: Spacing.three,
-    marginBottom: Spacing.two,
   },
-  rowInactive: { opacity: 0.5 },
+  rowInactive: { opacity: 0.55 },
   rowInfo: { gap: 2 },
-  rowRight: { alignItems: 'flex-end', gap: 2 },
+  rowTitle: { fontSize: 15, fontWeight: '600' },
+  rowAmount: { fontSize: 15, fontWeight: '700' },
+  rowRight: { alignItems: 'flex-end', gap: Spacing.one },
+  statusPill: {
+    paddingHorizontal: Spacing.two,
+    paddingVertical: 3,
+    borderRadius: Radius.pill,
+  },
+  statusLabel: { fontWeight: '700', fontSize: 11, lineHeight: 14 },
   modalContent: { flex: 1, padding: Spacing.four, gap: Spacing.three },
-  modalTitle: { fontSize: 24, lineHeight: 30, marginBottom: Spacing.two },
+  modalTitle: { fontSize: 22, lineHeight: 28, fontWeight: '700', marginBottom: Spacing.one },
   fieldGroup: { gap: Spacing.two },
+  fieldLabel: { fontWeight: '600' },
   modalActions: { flexDirection: 'row', gap: Spacing.three, marginTop: Spacing.three },
 });

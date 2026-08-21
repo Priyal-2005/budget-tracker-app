@@ -5,11 +5,12 @@ import { Alert, Pressable, RefreshControl, ScrollView, StyleSheet, View } from '
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { Button } from '@/components/button';
+import { Card } from '@/components/card';
 import { StatCard } from '@/components/stat-card';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { TrendChart } from '@/components/trend-chart';
-import { Spacing } from '@/constants/theme';
+import { Radius, Spacing } from '@/constants/theme';
 import { useThemePreference } from '@/contexts/theme-context';
 import { useMonthlyReport } from '@/hooks/use-monthly-report';
 import { useMonthlySummary } from '@/hooks/use-monthly-summary';
@@ -82,10 +83,12 @@ export default function HomeScreen() {
           refreshControl={<RefreshControl refreshing={isLoading} onRefresh={refresh} />}>
           <ThemedView style={styles.header}>
             <ThemedView style={styles.headerText}>
-              <ThemedText type="title" style={styles.title}>
+              <ThemedText type="screenTitle">
                 {profile?.display_name ? `Hi, ${profile.display_name}` : 'Home'}
               </ThemedText>
-              <ThemedText themeColor="textSecondary">{monthLabel}</ThemedText>
+              <ThemedText type="caption" themeColor="textSecondary">
+                {monthLabel}
+              </ThemedText>
             </ThemedView>
             <ThemedView style={styles.headerActions}>
               <Pressable
@@ -107,14 +110,14 @@ export default function HomeScreen() {
                     styles.settingsButton,
                     { backgroundColor: theme.backgroundElement },
                   ])}>
-                  <ThemedText type="smallBold">Settings</ThemedText>
+                  <ThemedText style={styles.settingsLabel}>Settings</ThemedText>
                 </Pressable>
               </Link>
             </ThemedView>
           </ThemedView>
 
           {error && (
-            <ThemedText themeColor="danger" type="small">
+            <ThemedText themeColor="danger" type="caption">
               {error}
             </ThemedText>
           )}
@@ -143,17 +146,17 @@ export default function HomeScreen() {
                 />
               </View>
 
-              <ThemedView style={styles.trendSection}>
-                <ThemedText type="smallBold" themeColor="textSecondary">
-                  LAST {TREND_MONTHS} MONTHS
+              <Card style={styles.trendSection}>
+                <ThemedText type="sectionLabel" themeColor="textMuted">
+                  Last {TREND_MONTHS} months
                 </ThemedText>
                 <TrendChart trend={trend} />
                 {comparison && (
-                  <ThemedText type="small" themeColor="textSecondary" style={styles.comparison}>
+                  <ThemedText type="caption" themeColor="textSecondary" style={styles.comparison}>
                     {comparison}
                   </ThemedText>
                 )}
-              </ThemedView>
+              </Card>
 
               <ThemedView style={styles.shareSection}>
                 <Button
@@ -162,7 +165,7 @@ export default function HomeScreen() {
                   onPress={handleShare}
                   isLoading={isSharing}
                 />
-                <ThemedText themeColor="textSecondary" type="small" style={styles.shareHint}>
+                <ThemedText type="caption" themeColor="textSecondary" style={styles.shareHint}>
                   Makes a one-page PDF of this month — handy for showing your parents.
                 </ThemedText>
               </ThemedView>
@@ -170,7 +173,7 @@ export default function HomeScreen() {
           )}
 
           {!isLoading && !summary && !error && (
-            <ThemedText themeColor="textSecondary">
+            <ThemedText type="caption" themeColor="textSecondary">
               No data yet for {monthLabel}. Log some income and expenses to see your summary.
             </ThemedText>
           )}
@@ -196,29 +199,31 @@ const styles = StyleSheet.create({
   headerText: { gap: Spacing.half, flex: 1 },
   headerActions: { flexDirection: 'row', alignItems: 'center', gap: Spacing.two },
   iconButton: {
-    width: 36,
-    height: 36,
-    borderRadius: Spacing.two,
+    width: 40,
+    height: 40,
+    borderRadius: Radius.small,
     alignItems: 'center',
     justifyContent: 'center',
   },
   settingsButton: {
     paddingHorizontal: Spacing.three,
-    paddingVertical: Spacing.two,
-    borderRadius: Spacing.two,
+    height: 40,
+    borderRadius: Radius.small,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
-  title: { fontSize: 28, lineHeight: 34 },
+  settingsLabel: { fontSize: 15, fontWeight: '600' },
   row: {
     flexDirection: 'row',
     gap: Spacing.three,
   },
   trendSection: {
-    marginTop: Spacing.three,
-    gap: Spacing.two,
+    marginTop: Spacing.two,
+    gap: Spacing.three,
   },
   comparison: { textAlign: 'center' },
   shareSection: {
-    marginTop: Spacing.three,
+    marginTop: Spacing.two,
     gap: Spacing.two,
   },
   shareHint: { textAlign: 'center' },

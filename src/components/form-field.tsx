@@ -2,7 +2,7 @@ import { StyleSheet, TextInput, type TextInputProps } from 'react-native';
 
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
-import { Spacing } from '@/constants/theme';
+import { Radius, Spacing } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
 
 interface FormFieldProps extends TextInputProps {
@@ -14,12 +14,16 @@ export function FormField({ label, style, ...rest }: FormFieldProps) {
 
   return (
     <ThemedView style={styles.container}>
-      <ThemedText type="smallBold">{label}</ThemedText>
+      {label ? (
+        <ThemedText type="caption" themeColor="textSecondary" style={styles.label}>
+          {label}
+        </ThemedText>
+      ) : null}
       <TextInput
         placeholderTextColor={theme.textSecondary}
         style={[
           styles.input,
-          { color: theme.text, borderColor: theme.border, backgroundColor: theme.backgroundElement },
+          { color: theme.text, borderColor: theme.border, backgroundColor: theme.background },
           style,
         ]}
         {...rest}
@@ -30,13 +34,17 @@ export function FormField({ label, style, ...rest }: FormFieldProps) {
 
 const styles = StyleSheet.create({
   container: {
-    gap: Spacing.two,
+    gap: Spacing.one + 2,
+  },
+  label: {
+    fontWeight: '600',
   },
   input: {
-    borderWidth: 1,
-    borderRadius: Spacing.two,
+    borderWidth: StyleSheet.hairlineWidth,
+    borderRadius: Radius.small,
     paddingHorizontal: Spacing.three,
     paddingVertical: Spacing.two + 4,
     fontSize: 16,
+    minHeight: 48,
   },
 });

@@ -4,7 +4,23 @@ import { Fonts, ThemeColor } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
 
 export type ThemedTextProps = TextProps & {
-  type?: 'default' | 'title' | 'small' | 'smallBold' | 'subtitle' | 'link' | 'linkPrimary' | 'code';
+  type?:
+    | 'default'
+    | 'title'
+    | 'small'
+    | 'smallBold'
+    | 'subtitle'
+    | 'link'
+    | 'linkPrimary'
+    | 'code'
+    /** Screen heading. */
+    | 'screenTitle'
+    /** Muted, letter-spaced label above a group of rows. */
+    | 'sectionLabel'
+    /** Large figure, tabular so columns of money line up. */
+    | 'metric'
+    /** Supporting line under a title or figure. */
+    | 'caption';
   themeColor?: ThemeColor;
 };
 
@@ -23,6 +39,10 @@ export function ThemedText({ style, type = 'default', themeColor, ...rest }: The
         type === 'link' && styles.link,
         type === 'linkPrimary' && styles.linkPrimary,
         type === 'code' && styles.code,
+        type === 'screenTitle' && styles.screenTitle,
+        type === 'sectionLabel' && styles.sectionLabel,
+        type === 'metric' && styles.metric,
+        type === 'caption' && styles.caption,
         style,
       ]}
       {...rest}
@@ -31,6 +51,32 @@ export function ThemedText({ style, type = 'default', themeColor, ...rest }: The
 }
 
 const styles = StyleSheet.create({
+  screenTitle: {
+    fontSize: 28,
+    lineHeight: 34,
+    fontWeight: '700',
+    letterSpacing: -0.5,
+  },
+  sectionLabel: {
+    fontSize: 12,
+    lineHeight: 16,
+    fontWeight: '600',
+    letterSpacing: 0.8,
+    textTransform: 'uppercase',
+  },
+  metric: {
+    fontSize: 26,
+    lineHeight: 32,
+    fontWeight: '700',
+    letterSpacing: -0.6,
+    // Keeps figures the same width so stacked amounts align.
+    fontVariant: ['tabular-nums'],
+  },
+  caption: {
+    fontSize: 13,
+    lineHeight: 18,
+    fontWeight: '500',
+  },
   small: {
     fontSize: 14,
     lineHeight: 20,

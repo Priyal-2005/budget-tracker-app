@@ -4,11 +4,12 @@ import { Alert, Modal, Pressable, ScrollView, StyleSheet, TextInput, View } from
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { Button } from '@/components/button';
+import { Card } from '@/components/card';
 import { FormField } from '@/components/form-field';
 import { ProgressBar } from '@/components/progress-bar';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
-import { Spacing } from '@/constants/theme';
+import { Radius, Spacing } from '@/constants/theme';
 import { useSavingsGoals } from '@/hooks/use-savings-goals';
 import { useTheme } from '@/hooks/use-theme';
 import { formatINR } from '@/lib/currency';
@@ -38,27 +39,26 @@ export default function GoalsScreen() {
     <ThemedView type="background" style={styles.flex}>
       <SafeAreaView style={styles.flex}>
         <ThemedView style={styles.header}>
-          <ThemedText type="title" style={styles.title}>
-            Goals
-          </ThemedText>
+          <ThemedText type="screenTitle">Goals</ThemedText>
           <Pressable
             onPress={() => setModalVisible(true)}
-            style={[styles.addButton, { backgroundColor: theme.primary }]}>
-            <ThemedText type="smallBold" style={{ color: '#ffffff' }}>
-              + Add
-            </ThemedText>
+            style={({ pressed }) => [
+              styles.addButton,
+              { backgroundColor: theme.primary, opacity: pressed ? 0.9 : 1 },
+            ]}>
+            <ThemedText style={styles.addButtonLabel}>+ Add</ThemedText>
           </Pressable>
         </ThemedView>
 
         <ScrollView contentContainerStyle={styles.listContent}>
           {error && (
-            <ThemedText themeColor="danger" type="small">
+            <ThemedText themeColor="danger" type="caption">
               {error}
             </ThemedText>
           )}
 
           {!isLoading && goals.length === 0 && !error && (
-            <ThemedText themeColor="textSecondary">
+            <ThemedText type="caption" themeColor="textSecondary">
               No goals yet. Saving for a laptop, a trip, or just an emergency fund? Add it here and
               put money aside as you go.
             </ThemedText>
@@ -74,7 +74,7 @@ export default function GoalsScreen() {
           ))}
 
           {goals.length > 0 && (
-            <ThemedText themeColor="textSecondary" type="small" style={styles.hint}>
+            <ThemedText themeColor="textMuted" type="caption" style={styles.hint}>
               Long-press a goal to remove it.
             </ThemedText>
           )}
@@ -125,12 +125,12 @@ function GoalCard({
 
   return (
     <Pressable onLongPress={onLongPress}>
-      <ThemedView type="backgroundElement" style={styles.card}>
+      <Card style={styles.card}>
         <ThemedView style={styles.cardHeader}>
           <ThemedView style={styles.cardHeaderText}>
-            <ThemedText type="smallBold">{goal.name}</ThemedText>
+            <ThemedText style={styles.cardTitle}>{goal.name}</ThemedText>
             {goal.target_date && (
-              <ThemedText themeColor="textSecondary" type="small">
+              <ThemedText type="caption" themeColor="textSecondary">
                 by{' '}
                 {new Date(goal.target_date).toLocaleDateString('en-IN', {
                   day: 'numeric',
@@ -141,12 +141,14 @@ function GoalCard({
             )}
           </ThemedView>
           {isComplete ? (
-            <ThemedText type="smallBold" themeColor="success">
-              Reached
-            </ThemedText>
+            <ThemedView style={[styles.reachedPill, { backgroundColor: theme.primarySoft }]}>
+              <ThemedText type="caption" themeColor="success" style={styles.reachedLabel}>
+                Reached
+              </ThemedText>
+            </ThemedView>
           ) : (
-            <Pressable onPress={() => setAdding((prev) => !prev)}>
-              <ThemedText type="smallBold" themeColor="primary">
+            <Pressable onPress={() => setAdding((prev) => !prev)} hitSlop={8}>
+              <ThemedText type="caption" themeColor="primary" style={styles.cardAction}>
                 {adding ? 'Close' : 'Add money'}
               </ThemedText>
             </Pressable>
@@ -156,11 +158,11 @@ function GoalCard({
         <ProgressBar progress={target === 0 ? 0 : saved / target} />
 
         <ThemedView style={styles.cardFooter}>
-          <ThemedText type="small" themeColor={isComplete ? 'success' : 'text'}>
+          <ThemedText type="caption" themeColor={isComplete ? 'success' : 'text'} style={styles.cardAmount}>
             {formatINR(saved)} of {formatINR(target)}
           </ThemedText>
           {!isComplete && (
-            <ThemedText type="small" themeColor="textSecondary">
+            <ThemedText type="caption" themeColor="textMuted">
               {formatINR(remaining)} to go
             </ThemedText>
           )}
@@ -182,7 +184,7 @@ function GoalCard({
             <Button title="Add" onPress={handleContribute} isLoading={isSaving} style={styles.addButtonInline} />
           </ThemedView>
         )}
-      </ThemedView>
+      </Card>
     </Pressable>
   );
 }
@@ -247,9 +249,7 @@ function AddGoalModal({
       <ThemedView type="background" style={styles.flex}>
         <SafeAreaView style={styles.flex}>
           <View style={styles.modalContent}>
-            <ThemedText type="title" style={styles.modalTitle}>
-              Add goal
-            </ThemedText>
+            <ThemedText style={styles.modalTitle}>Add goal</ThemedText>
 
             <FormField
               label="What for?"
@@ -273,7 +273,7 @@ function AddGoalModal({
             />
 
             {error && (
-              <ThemedText themeColor="danger" type="small">
+              <ThemedText themeColor="danger" type="caption">
                 {error}
               </ThemedText>
             )}
@@ -297,23 +297,23 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     alignItems: 'center',
     padding: Spacing.four,
-    paddingBottom: Spacing.two,
+    paddingBottom: Spacing.three,
   },
-  title: { fontSize: 28, lineHeight: 34 },
   addButton: {
     paddingHorizontal: Spacing.three,
-    paddingVertical: Spacing.two,
-    borderRadius: Spacing.two,
+    height: 40,
+    borderRadius: Radius.small,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
+  addButtonLabel: { color: '#ffffff', fontSize: 15, fontWeight: '700' },
   listContent: {
     paddingHorizontal: Spacing.four,
     paddingBottom: Spacing.six,
     gap: Spacing.three,
   },
   card: {
-    borderRadius: Spacing.three,
-    padding: Spacing.three,
-    gap: Spacing.two,
+    gap: Spacing.two + 2,
   },
   cardHeader: {
     flexDirection: 'row',
@@ -322,6 +322,15 @@ const styles = StyleSheet.create({
     gap: Spacing.two,
   },
   cardHeaderText: { gap: 2, flex: 1 },
+  cardTitle: { fontSize: 16, fontWeight: '700' },
+  cardAction: { fontWeight: '700' },
+  cardAmount: { fontWeight: '600' },
+  reachedPill: {
+    paddingHorizontal: Spacing.two,
+    paddingVertical: 3,
+    borderRadius: Radius.pill,
+  },
+  reachedLabel: { fontWeight: '700' },
   cardFooter: {
     flexDirection: 'row',
     justifyContent: 'space-between',
@@ -335,14 +344,15 @@ const styles = StyleSheet.create({
   },
   amountInput: {
     flex: 1,
-    borderWidth: 1,
-    borderRadius: Spacing.two,
+    borderWidth: StyleSheet.hairlineWidth,
+    borderRadius: Radius.small,
     paddingHorizontal: Spacing.three,
-    paddingVertical: Spacing.two,
+    paddingVertical: Spacing.two + 4,
+    minHeight: 48,
   },
   addButtonInline: { paddingHorizontal: Spacing.four },
   hint: { marginTop: Spacing.two, textAlign: 'center' },
   modalContent: { flex: 1, padding: Spacing.four, gap: Spacing.three },
-  modalTitle: { fontSize: 24, lineHeight: 30, marginBottom: Spacing.two },
+  modalTitle: { fontSize: 22, lineHeight: 28, fontWeight: '700', marginBottom: Spacing.one },
   modalActions: { flexDirection: 'row', gap: Spacing.three, marginTop: Spacing.three },
 });

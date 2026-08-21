@@ -38,10 +38,8 @@ export default function LoginScreen() {
           style={styles.flex}
           behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
           <ScrollView contentContainerStyle={styles.container} keyboardShouldPersistTaps="handled">
-            <ThemedText type="title" style={styles.title}>
-              Welcome back
-            </ThemedText>
-            <ThemedText themeColor="textSecondary" style={styles.subtitle}>
+            <ThemedText style={styles.title}>Welcome back</ThemedText>
+            <ThemedText type="caption" themeColor="textSecondary" style={styles.subtitle}>
               Log in to track this month&apos;s budget.
             </ThemedText>
 
@@ -65,7 +63,7 @@ export default function LoginScreen() {
               />
 
               {error && (
-                <ThemedText themeColor="danger" type="small">
+                <ThemedText themeColor="danger" type="caption">
                   {error}
                 </ThemedText>
               )}
@@ -74,11 +72,11 @@ export default function LoginScreen() {
             </ThemedView>
 
             <ThemedView style={styles.footer}>
-              <ThemedText themeColor="textSecondary" type="small">
+              <ThemedText type="caption" themeColor="textSecondary">
                 Don&apos;t have an account?
               </ThemedText>
               <Link href="/(auth)/signup" replace>
-                <ThemedText type="smallBold" themeColor="primary">
+                <ThemedText type="caption" themeColor="primary" style={styles.link}>
                   Sign up
                 </ThemedText>
               </Link>
@@ -98,12 +96,13 @@ const styles = StyleSheet.create({
     paddingHorizontal: Spacing.four,
     gap: Spacing.four,
   },
-  title: { fontSize: 32, lineHeight: 38 },
+  title: { fontSize: 30, lineHeight: 36, fontWeight: '700', letterSpacing: -0.6 },
   subtitle: {},
-  form: { gap: Spacing.three },
+  form: { gap: Spacing.three, marginTop: Spacing.two },
   footer: {
     flexDirection: 'row',
     justifyContent: 'center',
-    gap: Spacing.two,
+    gap: Spacing.one,
   },
+  link: { fontWeight: '700' },
 });

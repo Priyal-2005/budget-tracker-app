@@ -1,7 +1,7 @@
 import { Pressable, ScrollView, StyleSheet } from 'react-native';
 
 import { ThemedText } from '@/components/themed-text';
-import { Spacing } from '@/constants/theme';
+import { Radius, Spacing } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
 
 interface ChipSelectProps<T extends string> {
@@ -21,14 +21,17 @@ export function ChipSelect<T extends string>({ options, value, onChange }: ChipS
           <Pressable
             key={option.value}
             onPress={() => onChange(option.value)}
-            style={[
+            style={({ pressed }) => [
               styles.chip,
               {
-                backgroundColor: selected ? theme.primary : theme.backgroundElement,
+                backgroundColor: selected ? theme.primary : theme.background,
                 borderColor: selected ? theme.primary : theme.border,
+                opacity: pressed ? 0.85 : 1,
               },
             ]}>
-            <ThemedText type="small" style={{ color: selected ? '#ffffff' : theme.text }}>
+            <ThemedText
+              type="small"
+              style={[styles.chipLabel, { color: selected ? '#ffffff' : theme.textSecondary }]}>
               {option.label}
             </ThemedText>
           </Pressable>
@@ -45,8 +48,9 @@ const styles = StyleSheet.create({
   },
   chip: {
     paddingHorizontal: Spacing.three,
-    paddingVertical: Spacing.two,
-    borderRadius: 999,
-    borderWidth: 1,
+    paddingVertical: Spacing.two + 2,
+    borderRadius: Radius.pill,
+    borderWidth: StyleSheet.hairlineWidth,
   },
+  chipLabel: { fontWeight: '600' },
 });

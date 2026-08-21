@@ -53,14 +53,12 @@ export default function SignupScreen() {
     return (
       <ThemedView type="background" style={styles.flex}>
         <SafeAreaView style={[styles.flex, styles.checkEmailContainer]}>
-          <ThemedText type="title" style={styles.title}>
-            Check your email
-          </ThemedText>
-          <ThemedText themeColor="textSecondary" style={styles.subtitle}>
+          <ThemedText style={styles.title}>Check your email</ThemedText>
+          <ThemedText type="caption" themeColor="textSecondary" style={styles.subtitle}>
             We sent a confirmation link to {email.trim()}. Confirm it, then come back and log in.
           </ThemedText>
           <Link href="/(auth)/login" replace>
-            <ThemedText type="smallBold" themeColor="primary">
+            <ThemedText type="caption" themeColor="primary" style={styles.link}>
               Back to log in
             </ThemedText>
           </Link>
@@ -76,10 +74,8 @@ export default function SignupScreen() {
           style={styles.flex}
           behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
           <ScrollView contentContainerStyle={styles.container} keyboardShouldPersistTaps="handled">
-            <ThemedText type="title" style={styles.title}>
-              Create account
-            </ThemedText>
-            <ThemedText themeColor="textSecondary" style={styles.subtitle}>
+            <ThemedText style={styles.title}>Create account</ThemedText>
+            <ThemedText type="caption" themeColor="textSecondary" style={styles.subtitle}>
               Track your budget, buffer, and savings goals.
             </ThemedText>
 
@@ -117,7 +113,7 @@ export default function SignupScreen() {
               />
 
               {error && (
-                <ThemedText themeColor="danger" type="small">
+                <ThemedText themeColor="danger" type="caption">
                   {error}
                 </ThemedText>
               )}
@@ -126,11 +122,11 @@ export default function SignupScreen() {
             </ThemedView>
 
             <ThemedView style={styles.footer}>
-              <ThemedText themeColor="textSecondary" type="small">
+              <ThemedText type="caption" themeColor="textSecondary">
                 Already have an account?
               </ThemedText>
               <Link href="/(auth)/login" replace>
-                <ThemedText type="smallBold" themeColor="primary">
+                <ThemedText type="caption" themeColor="primary" style={styles.link}>
                   Log in
                 </ThemedText>
               </Link>
@@ -155,12 +151,13 @@ const styles = StyleSheet.create({
     paddingHorizontal: Spacing.four,
     gap: Spacing.three,
   },
-  title: { fontSize: 32, lineHeight: 38 },
+  title: { fontSize: 30, lineHeight: 36, fontWeight: '700', letterSpacing: -0.6 },
   subtitle: {},
-  form: { gap: Spacing.three },
+  form: { gap: Spacing.three, marginTop: Spacing.two },
   footer: {
     flexDirection: 'row',
     justifyContent: 'center',
-    gap: Spacing.two,
+    gap: Spacing.one,
   },
+  link: { fontWeight: '700' },
 });

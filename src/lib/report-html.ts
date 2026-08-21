@@ -59,27 +59,27 @@ export function buildReportHtml(report: MonthlyReport, displayName: string | nul
       * { box-sizing: border-box; }
       body {
         font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-        color: #16181d;
+        color: #16181D;
         margin: 0;
         padding: 32px;
         background: #ffffff;
       }
       h1 { font-size: 24px; margin: 0 0 4px; }
-      h2 { font-size: 14px; text-transform: uppercase; letter-spacing: 0.04em; color: #60646c; margin: 28px 0 8px; }
-      h3 { font-size: 12px; text-transform: uppercase; letter-spacing: 0.04em; color: #90949c; margin: 18px 0 6px; font-weight: 600; }
-      td.date { color: #90949c; white-space: nowrap; width: 62px; }
-      .muted { color: #60646c; }
+      h2 { font-size: 14px; text-transform: uppercase; letter-spacing: 0.04em; color: #6B7280; margin: 28px 0 8px; }
+      h3 { font-size: 12px; text-transform: uppercase; letter-spacing: 0.04em; color: #9CA3AF; margin: 18px 0 6px; font-weight: 600; }
+      td.date { color: #9CA3AF; white-space: nowrap; width: 62px; }
+      .muted { color: #6B7280; }
       .summary { display: flex; gap: 12px; margin-top: 20px; flex-wrap: wrap; }
-      .stat { flex: 1; min-width: 130px; border: 1px solid #e0e1e6; border-radius: 10px; padding: 12px; }
-      .stat .label { font-size: 12px; color: #60646c; }
+      .stat { flex: 1; min-width: 130px; border: 1px solid #E8EAEE; border-radius: 10px; padding: 12px; }
+      .stat .label { font-size: 12px; color: #6B7280; }
       .stat .value { font-size: 20px; font-weight: 600; margin-top: 2px; }
-      .value.good { color: #1e7f4a; }
-      .value.bad { color: #c23b35; }
+      .value.good { color: #12805C; }
+      .value.bad { color: #DC2626; }
       table { width: 100%; border-collapse: collapse; }
-      td { padding: 7px 0; border-bottom: 1px solid #eeeff2; font-size: 14px; }
+      td { padding: 7px 0; border-bottom: 1px solid #EDEFF3; font-size: 14px; }
       td.amount { text-align: right; font-variant-numeric: tabular-nums; }
-      tr.total td { font-weight: 600; border-bottom: none; border-top: 2px solid #16181d; }
-      footer { margin-top: 32px; font-size: 11px; color: #90949c; }
+      tr.total td { font-weight: 600; border-bottom: none; border-top: 2px solid #16181D; }
+      footer { margin-top: 32px; font-size: 11px; color: #9CA3AF; }
     </style>
   </head>
   <body>

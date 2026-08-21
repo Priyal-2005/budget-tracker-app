@@ -1,7 +1,7 @@
 import { StyleSheet } from 'react-native';
 
+import { Card } from '@/components/card';
 import { ThemedText } from '@/components/themed-text';
-import { ThemedView } from '@/components/themed-view';
 import { Spacing, type ThemeColor } from '@/constants/theme';
 
 interface StatCardProps {
@@ -13,31 +13,25 @@ interface StatCardProps {
 
 export function StatCard({ label, value, valueColor, caption }: StatCardProps) {
   return (
-    <ThemedView type="backgroundElement" style={styles.card}>
-      <ThemedText themeColor="textSecondary" type="small">
+    <Card style={styles.card}>
+      <ThemedText type="caption" themeColor="textSecondary">
         {label}
       </ThemedText>
-      <ThemedText type="subtitle" themeColor={valueColor} style={styles.value}>
+      <ThemedText type="metric" themeColor={valueColor}>
         {value}
       </ThemedText>
       {caption && (
-        <ThemedText themeColor="textSecondary" type="small">
+        <ThemedText type="caption" themeColor="textSecondary">
           {caption}
         </ThemedText>
       )}
-    </ThemedView>
+    </Card>
   );
 }
 
 const styles = StyleSheet.create({
   card: {
-    borderRadius: Spacing.three,
-    padding: Spacing.three,
     gap: Spacing.half,
     flex: 1,
-  },
-  value: {
-    fontSize: 24,
-    lineHeight: 30,
   },
 });

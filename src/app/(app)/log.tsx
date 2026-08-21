@@ -4,11 +4,12 @@ import { Alert, Modal, Pressable, ScrollView, StyleSheet, TextInput, View } from
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { Button } from '@/components/button';
+import { Card } from '@/components/card';
 import { FormField } from '@/components/form-field';
 import { ThemedText } from '@/components/themed-text';
 import { ProgressBar } from '@/components/progress-bar';
 import { ThemedView } from '@/components/themed-view';
-import { Spacing } from '@/constants/theme';
+import { Radius, Spacing } from '@/constants/theme';
 import { useBuffer } from '@/hooks/use-buffer';
 import { useBufferSpends } from '@/hooks/use-buffer-spends';
 import { useLogData, type LoggedEntry } from '@/hooks/use-log-data';
@@ -113,12 +114,10 @@ export default function LogScreen() {
     <ThemedView type="background" style={styles.flex}>
       <SafeAreaView style={styles.flex}>
         <ScrollView contentContainerStyle={styles.container}>
-          <ThemedText type="title" style={styles.title}>
-            Log
-          </ThemedText>
+          <ThemedText type="screenTitle">Log</ThemedText>
 
           {error && (
-            <ThemedText themeColor="danger" type="small">
+            <ThemedText themeColor="danger" type="caption">
               {error}
             </ThemedText>
           )}
@@ -140,12 +139,12 @@ export default function LogScreen() {
             }}
           />
 
-          <ThemedView style={styles.section}>
-            <ThemedText type="smallBold" themeColor="textSecondary">
-              THIS WEEK&apos;S BATCH
+          <Card style={styles.section}>
+            <ThemedText type="sectionLabel" themeColor="textMuted">
+              This week&apos;s batch
             </ThemedText>
             {weeklyItems.length === 0 ? (
-              <ThemedText themeColor="textSecondary" type="small">
+              <ThemedText type="caption" themeColor="textSecondary">
                 No weekly items yet. Add some from the Items tab (milk, fruits, veggies…).
               </ThemedText>
             ) : (
@@ -179,18 +178,18 @@ export default function LogScreen() {
               <Button title="Log this week's batch" onPress={handleLogWeek} isLoading={isSubmittingWeekly} />
             )}
             {weeklyItems.length > 0 && pendingWeeklyItems.length === 0 && (
-              <ThemedText themeColor="success" type="small">
+              <ThemedText themeColor="success" type="caption" style={styles.doneLabel}>
                 This week&apos;s shop is logged.
               </ThemedText>
             )}
-          </ThemedView>
+          </Card>
 
-          <ThemedView style={styles.section}>
-            <ThemedText type="smallBold" themeColor="textSecondary">
-              THIS MONTH
+          <Card style={styles.section}>
+            <ThemedText type="sectionLabel" themeColor="textMuted">
+              This month
             </ThemedText>
             {monthlyItems.length === 0 ? (
-              <ThemedText themeColor="textSecondary" type="small">
+              <ThemedText type="caption" themeColor="textSecondary">
                 No monthly items yet. Add things like medicines or subscriptions from the Items tab.
               </ThemedText>
             ) : (
@@ -211,7 +210,7 @@ export default function LogScreen() {
                 />
               ))
             )}
-          </ThemedView>
+          </Card>
         </ScrollView>
       </SafeAreaView>
     </ThemedView>
@@ -239,8 +238,8 @@ function WeeklyItemRow({
         {state.checked && <ThemedText style={{ color: '#ffffff', fontSize: 12 }}>✓</ThemedText>}
       </Pressable>
       <ThemedView style={styles.itemRowInfo}>
-        <ThemedText type="default">{item.name}</ThemedText>
-        <ThemedText themeColor="textSecondary" type="small">
+        <ThemedText style={styles.itemName}>{item.name}</ThemedText>
+        <ThemedText type="caption" themeColor="textSecondary">
           {CATEGORY_LABELS[item.category]}
         </ThemedText>
       </ThemedView>
@@ -251,7 +250,12 @@ function WeeklyItemRow({
         editable={state.checked}
         style={[
           styles.amountInput,
-          { borderColor: theme.border, color: theme.text, opacity: state.checked ? 1 : 0.4 },
+          {
+            borderColor: theme.border,
+            color: theme.text,
+            backgroundColor: theme.background,
+            opacity: state.checked ? 1 : 0.4,
+          },
         ]}
       />
     </ThemedView>
@@ -317,14 +321,14 @@ function LoggedItemRow({
     <ThemedView style={styles.monthlyRowContainer}>
       <ThemedView style={styles.itemRow}>
         <ThemedView style={styles.itemRowInfo}>
-          <ThemedText type="default">{item.name}</ThemedText>
-          <ThemedText themeColor="textSecondary" type="small">
+          <ThemedText style={styles.itemName}>{item.name}</ThemedText>
+          <ThemedText type="caption" themeColor="textSecondary">
             {CATEGORY_LABELS[item.category]}
           </ThemedText>
         </ThemedView>
         {editing ? null : (
           <Pressable onPress={() => setEditing(true)}>
-            <ThemedText type="small" themeColor="success">
+            <ThemedText type="caption" themeColor="success" style={styles.loggedAmount}>
               {formatINR(entry.amount)} ✓
             </ThemedText>
           </Pressable>
@@ -336,7 +340,10 @@ function LoggedItemRow({
             value={amount}
             onChangeText={setAmount}
             keyboardType="decimal-pad"
-            style={[styles.amountInput, { borderColor: theme.border, color: theme.text, flex: 1 }]}
+            style={[
+              styles.amountInput,
+              { borderColor: theme.border, color: theme.text, backgroundColor: theme.background, flex: 1 },
+            ]}
           />
           <Button title="Remove" variant="danger" onPress={handleRemove} style={styles.smallButton} />
           <Button title="Save" onPress={handleSave} isLoading={isSaving} style={styles.smallButton} />
@@ -410,20 +417,20 @@ function MonthlyItemRow({
     <ThemedView style={styles.monthlyRowContainer}>
       <ThemedView style={styles.itemRow}>
         <ThemedView style={styles.itemRowInfo}>
-          <ThemedText type="default">{item.name}</ThemedText>
-          <ThemedText themeColor="textSecondary" type="small">
+          <ThemedText style={styles.itemName}>{item.name}</ThemedText>
+          <ThemedText type="caption" themeColor="textSecondary">
             {CATEGORY_LABELS[item.category]} · usually {formatINR(item.default_amount)}
           </ThemedText>
         </ThemedView>
         {entry ? (
           <Pressable onPress={() => setEditing(true)}>
-            <ThemedText type="small" themeColor="success">
+            <ThemedText type="caption" themeColor="success" style={styles.loggedAmount}>
               {formatINR(entry.amount)} ✓
             </ThemedText>
           </Pressable>
         ) : editing ? null : (
-          <Pressable onPress={() => setEditing(true)}>
-            <ThemedText type="smallBold" themeColor="primary">
+          <Pressable onPress={() => setEditing(true)} hitSlop={8}>
+            <ThemedText type="caption" themeColor="primary" style={styles.logAction}>
               Log
             </ThemedText>
           </Pressable>
@@ -435,7 +442,10 @@ function MonthlyItemRow({
             value={amount}
             onChangeText={setAmount}
             keyboardType="decimal-pad"
-            style={[styles.amountInput, { borderColor: theme.border, color: theme.text, flex: 1 }]}
+            style={[
+              styles.amountInput,
+              { borderColor: theme.border, color: theme.text, backgroundColor: theme.background, flex: 1 },
+            ]}
           />
           {entry ? (
             <Button title="Remove" variant="danger" onPress={handleRemove} style={styles.smallButton} />
@@ -517,38 +527,38 @@ function BufferSpendCard({
   const progress = bufferAllotted && bufferAllotted > 0 ? spent / bufferAllotted : 0;
 
   return (
-    <ThemedView type="backgroundElement" style={styles.bufferCard}>
+    <Card style={styles.bufferCard}>
       <ThemedView style={styles.bufferHeader}>
         <ThemedView style={styles.bufferHeadings}>
-          <ThemedText type="smallBold">Buffer</ThemedText>
-          <ThemedText themeColor="textSecondary" type="small">
+          <ThemedText style={styles.bufferTitle}>Buffer</ThemedText>
+          <ThemedText type="caption" themeColor="textSecondary">
             Ice cream, Maggi, random cravings
           </ThemedText>
         </ThemedView>
         <Pressable onPress={() => setAllotmentModalVisible(true)} hitSlop={8}>
-          <ThemedText type="smallBold" themeColor="primary">
+          <ThemedText type="caption" themeColor="primary" style={styles.bufferEditAction}>
             {bufferAllotted === null ? 'Set buffer' : 'Edit'}
           </ThemedText>
         </Pressable>
       </ThemedView>
 
       {bufferAllotted === null ? (
-        <ThemedText themeColor="textSecondary" type="small">
+        <ThemedText type="caption" themeColor="textSecondary">
           Set a monthly amount to keep treats separate from your fixed spending.
         </ThemedText>
       ) : (
         <ThemedView style={styles.bufferStatusBlock}>
           <ThemedView style={styles.bufferAmountRow}>
-            <ThemedText type="subtitle" themeColor={bufferStatusColor(status)} style={styles.bufferBigAmount}>
+            <ThemedText type="metric" themeColor={bufferStatusColor(status)}>
               {formatINR(bufferRemaining ?? 0)}
             </ThemedText>
-            <ThemedText themeColor="textSecondary" type="small">
+            <ThemedText type="caption" themeColor="textSecondary">
               left of {formatINR(bufferAllotted)}
             </ThemedText>
           </ThemedView>
           <ProgressBar progress={progress} />
           {statusLabel && (
-            <ThemedText type="small" themeColor={bufferStatusColor(status)}>
+            <ThemedText type="caption" themeColor={bufferStatusColor(status)} style={styles.statusText}>
               {statusLabel}
             </ThemedText>
           )}
@@ -569,8 +579,8 @@ function BufferSpendCard({
 
       {spends.length > 0 && (
         <ThemedView style={styles.spendHistory}>
-          <ThemedText type="smallBold" themeColor="textSecondary" style={styles.spendHistoryTitle}>
-            THIS MONTH
+          <ThemedText type="sectionLabel" themeColor="textMuted" style={styles.spendHistoryTitle}>
+            This month
           </ThemedText>
           {spends.map((spend) => (
             <Pressable
@@ -586,20 +596,20 @@ function BufferSpendCard({
                 )
               }>
               <ThemedView style={styles.spendRow}>
-                <ThemedText themeColor="textSecondary" type="small" style={styles.spendDate}>
+                <ThemedText type="caption" themeColor="textMuted" style={styles.spendDate}>
                   {new Date(spend.logged_at).toLocaleDateString('en-IN', {
                     day: 'numeric',
                     month: 'short',
                   })}
                 </ThemedText>
-                <ThemedText type="small" style={styles.spendNote} numberOfLines={1}>
+                <ThemedText type="caption" style={styles.spendNote} numberOfLines={1}>
                   {spend.note || 'Buffer spend'}
                 </ThemedText>
-                <ThemedText type="smallBold">{formatINR(Number(spend.amount))}</ThemedText>
+                <ThemedText style={styles.spendAmount}>{formatINR(Number(spend.amount))}</ThemedText>
               </ThemedView>
             </Pressable>
           ))}
-          <ThemedText themeColor="textSecondary" type="small" style={styles.spendHint}>
+          <ThemedText type="caption" themeColor="textMuted" style={styles.spendHint}>
             Long-press to remove
           </ThemedText>
         </ThemedView>
@@ -612,7 +622,7 @@ function BufferSpendCard({
         onSubmit={onSetAllotment}
         onSaved={onLogged}
       />
-    </ThemedView>
+    </Card>
   );
 }
 
@@ -666,10 +676,8 @@ function SetBufferModal({
       <ThemedView type="background" style={styles.flex}>
         <SafeAreaView style={styles.flex}>
           <View style={styles.modalContent}>
-            <ThemedText type="title" style={styles.modalTitle}>
-              Buffer for {monthLabel}
-            </ThemedText>
-            <ThemedText themeColor="textSecondary" type="small">
+            <ThemedText style={styles.modalTitle}>Buffer for {monthLabel}</ThemedText>
+            <ThemedText type="caption" themeColor="textSecondary">
               Money set aside for unplanned treats, kept separate from your fixed
               expenses so you know what is safe to spend.
             </ThemedText>
@@ -683,7 +691,7 @@ function SetBufferModal({
             />
 
             {error && (
-              <ThemedText themeColor="danger" type="small">
+              <ThemedText themeColor="danger" type="caption">
                 {error}
               </ThemedText>
             )}
@@ -702,8 +710,7 @@ function SetBufferModal({
 const styles = StyleSheet.create({
   flex: { flex: 1 },
   flex1: { flex: 1 },
-  container: { padding: Spacing.four, gap: Spacing.four, paddingBottom: Spacing.six },
-  title: { fontSize: 28, lineHeight: 34 },
+  container: { padding: Spacing.four, gap: Spacing.three, paddingBottom: Spacing.six },
   section: { gap: Spacing.two },
   itemRow: {
     flexDirection: 'row',
@@ -712,17 +719,20 @@ const styles = StyleSheet.create({
     paddingVertical: Spacing.two,
   },
   itemRowInfo: { flex: 1, gap: 2 },
+  itemName: { fontSize: 15, fontWeight: '600' },
+  loggedAmount: { fontWeight: '700' },
+  logAction: { fontWeight: '700' },
   checkbox: {
     width: 24,
     height: 24,
-    borderRadius: 6,
+    borderRadius: 7,
     borderWidth: 1.5,
     alignItems: 'center',
     justifyContent: 'center',
   },
   amountInput: {
-    borderWidth: 1,
-    borderRadius: Spacing.two,
+    borderWidth: StyleSheet.hairlineWidth,
+    borderRadius: Radius.small,
     paddingHorizontal: Spacing.two,
     paddingVertical: Spacing.two,
     width: 90,
@@ -739,16 +749,17 @@ const styles = StyleSheet.create({
     paddingBottom: Spacing.two,
   },
   smallButton: { paddingHorizontal: Spacing.three },
+  doneLabel: { fontWeight: '600' },
   bufferCard: {
-    borderRadius: Spacing.three,
-    padding: Spacing.three,
     gap: Spacing.three,
   },
   bufferHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start' },
   bufferHeadings: { gap: 2, flex: 1 },
+  bufferTitle: { fontSize: 17, fontWeight: '700' },
+  bufferEditAction: { fontWeight: '700' },
   bufferStatusBlock: { gap: Spacing.two },
   bufferAmountRow: { flexDirection: 'row', alignItems: 'baseline', gap: Spacing.two },
-  bufferBigAmount: { fontSize: 28, lineHeight: 34 },
+  statusText: { fontWeight: '600' },
   bufferForm: { gap: Spacing.two },
   spendHistory: { gap: Spacing.one },
   spendHistoryTitle: { marginBottom: Spacing.half },
@@ -760,8 +771,9 @@ const styles = StyleSheet.create({
   },
   spendDate: { width: 52 },
   spendNote: { flex: 1 },
+  spendAmount: { fontSize: 14, fontWeight: '700' },
   spendHint: { textAlign: 'center', marginTop: Spacing.half },
   modalContent: { flex: 1, padding: Spacing.four, gap: Spacing.three },
-  modalTitle: { fontSize: 24, lineHeight: 30, marginBottom: Spacing.two },
+  modalTitle: { fontSize: 22, lineHeight: 28, fontWeight: '700', marginBottom: Spacing.one },
   modalActions: { flexDirection: 'row', gap: Spacing.three, marginTop: Spacing.three },
 });

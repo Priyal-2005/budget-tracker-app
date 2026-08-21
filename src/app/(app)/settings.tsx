@@ -3,6 +3,7 @@ import { Pressable, StyleSheet } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { Button } from '@/components/button';
+import { Card } from '@/components/card';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { Spacing } from '@/constants/theme';
@@ -17,22 +18,20 @@ export default function SettingsScreen() {
     <ThemedView type="background" style={styles.flex}>
       <SafeAreaView style={styles.flex}>
         <ThemedView style={styles.container}>
-          <Pressable onPress={() => router.back()} accessibilityRole="button">
-            <ThemedText type="smallBold" themeColor="primary">
+          <Pressable onPress={() => router.back()} accessibilityRole="button" hitSlop={8}>
+            <ThemedText type="caption" themeColor="primary" style={styles.back}>
               ‹ Back
             </ThemedText>
           </Pressable>
 
-          <ThemedText type="title" style={styles.title}>
-            Settings
-          </ThemedText>
+          <ThemedText type="screenTitle">Settings</ThemedText>
 
-          <ThemedView type="backgroundElement" style={styles.card}>
-            <ThemedText type="smallBold">{profile?.display_name ?? '—'}</ThemedText>
-            <ThemedText themeColor="textSecondary" type="small">
+          <Card style={styles.card}>
+            <ThemedText style={styles.profileName}>{profile?.display_name ?? '—'}</ThemedText>
+            <ThemedText type="caption" themeColor="textSecondary">
               {session?.user.email}
             </ThemedText>
-          </ThemedView>
+          </Card>
 
           <Button title="Sign out" variant="danger" onPress={signOut} />
         </ThemedView>
@@ -48,10 +47,9 @@ const styles = StyleSheet.create({
     padding: Spacing.four,
     gap: Spacing.four,
   },
-  title: { fontSize: 28, lineHeight: 34 },
+  back: { fontWeight: '700' },
   card: {
-    borderRadius: Spacing.three,
-    padding: Spacing.three,
     gap: Spacing.half,
   },
+  profileName: { fontSize: 16, fontWeight: '700' },
 });

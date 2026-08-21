@@ -7,30 +7,39 @@ import '@/global.css';
 
 import { Platform } from 'react-native';
 
+// Surfaces are kept close together in tone and separated by a hairline border
+// rather than strong fills — pure black against mid grey reads as harsh boxes,
+// which is what the earlier palette did on a phone at night.
 export const Colors = {
   light: {
-    text: '#000000',
-    background: '#ffffff',
-    backgroundElement: '#F0F0F3',
-    backgroundSelected: '#E0E1E6',
-    textSecondary: '#60646C',
-    border: '#E0E1E6',
-    primary: '#208AEF',
-    success: '#1E9E5A',
-    warning: '#C97A0C',
-    danger: '#D6423C',
+    text: '#16181D',
+    background: '#FFFFFF',
+    backgroundElement: '#F7F8FA',
+    backgroundSelected: '#EDEFF3',
+    textSecondary: '#6B7280',
+    textMuted: '#9CA3AF',
+    border: '#E8EAEE',
+    primary: '#2563EB',
+    primarySoft: '#EFF4FE',
+    success: '#12805C',
+    warning: '#B45309',
+    danger: '#DC2626',
   },
   dark: {
-    text: '#ffffff',
-    background: '#000000',
-    backgroundElement: '#212225',
-    backgroundSelected: '#2E3135',
-    textSecondary: '#B0B4BA',
-    border: '#2E3135',
-    primary: '#4DA3F5',
-    success: '#3FC97D',
+    text: '#F5F6F7',
+    // Not pure black: a near-black lets cards sit slightly above the page
+    // without the jarring contrast step.
+    background: '#0B0C0E',
+    backgroundElement: '#16181C',
+    backgroundSelected: '#212429',
+    textSecondary: '#9BA1AA',
+    textMuted: '#6B717A',
+    border: '#24272C',
+    primary: '#5B9BF8',
+    primarySoft: '#161D2B',
+    success: '#3DD68C',
     warning: '#E0A03C',
-    danger: '#F26B65',
+    danger: '#F87171',
   },
 } as const;
 
@@ -60,6 +69,14 @@ export const Fonts = Platform.select({
     mono: 'var(--font-mono)',
   },
 });
+
+/** Corner rounding, kept consistent so surfaces feel like one family. */
+export const Radius = {
+  small: 10,
+  medium: 14,
+  large: 18,
+  pill: 999,
+} as const;
 
 export const Spacing = {
   half: 2,

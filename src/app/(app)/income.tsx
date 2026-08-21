@@ -4,11 +4,12 @@ import { Alert, Modal, Pressable, ScrollView, StyleSheet, Switch, View } from 'r
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { Button } from '@/components/button';
+import { Card } from '@/components/card';
 import { ChipSelect } from '@/components/chip-select';
 import { FormField } from '@/components/form-field';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
-import { Spacing } from '@/constants/theme';
+import { Radius, Spacing } from '@/constants/theme';
 import { useIncome } from '@/hooks/use-income';
 import { useIncomeAverage } from '@/hooks/use-income-average';
 import { useTheme } from '@/hooks/use-theme';
@@ -50,53 +51,54 @@ export default function IncomeScreen() {
       <SafeAreaView style={styles.flex}>
         <ThemedView style={styles.header}>
           <ThemedView>
-            <ThemedText type="title" style={styles.title}>
-              Income
-            </ThemedText>
-            <ThemedText themeColor="textSecondary" type="small">
+            <ThemedText type="screenTitle">Income</ThemedText>
+            <ThemedText type="caption" themeColor="textSecondary">
               {monthLabel}
             </ThemedText>
           </ThemedView>
           <Pressable
             onPress={() => setModalVisible(true)}
-            style={[styles.addButton, { backgroundColor: theme.primary }]}>
-            <ThemedText type="smallBold" style={{ color: '#ffffff' }}>
-              + Add
-            </ThemedText>
+            style={({ pressed }) => [
+              styles.addButton,
+              { backgroundColor: theme.primary, opacity: pressed ? 0.9 : 1 },
+            ]}>
+            <ThemedText style={styles.addButtonLabel}>+ Add</ThemedText>
           </Pressable>
         </ThemedView>
 
         <ScrollView contentContainerStyle={styles.listContent}>
-          <ThemedView type="backgroundElement" style={styles.totalCard}>
-            <ThemedText themeColor="textSecondary" type="small">
+          <Card style={styles.totalCard}>
+            <ThemedText type="caption" themeColor="textSecondary">
               Total this month
             </ThemedText>
-            <ThemedText type="subtitle" themeColor="success" style={styles.totalValue}>
+            <ThemedText type="metric" themeColor="success">
               {formatINR(total)}
             </ThemedText>
-          </ThemedView>
+          </Card>
 
           {average && (
-            <ThemedView type="backgroundElement" style={styles.averageCard}>
-              <ThemedText themeColor="textSecondary" type="small">
+            <Card style={styles.averageCard}>
+              <ThemedText type="caption" themeColor="textSecondary">
                 Internship and freelance, per month
               </ThemedText>
-              <ThemedText type="smallBold">{formatINR(Math.round(average.monthlyAverage))}</ThemedText>
-              <ThemedText themeColor="textSecondary" type="small">
+              <ThemedText style={styles.averageValue}>
+                {formatINR(Math.round(average.monthlyAverage))}
+              </ThemedText>
+              <ThemedText type="caption" themeColor="textMuted">
                 Averaged over {average.monthsCounted === 1 ? 'last month' : `the last ${average.monthsCounted} months`}
                 , not counting this one. Handy when this money is what you are planning around.
               </ThemedText>
-            </ThemedView>
+            </Card>
           )}
 
           {error && (
-            <ThemedText themeColor="danger" type="small">
+            <ThemedText themeColor="danger" type="caption">
               {error}
             </ThemedText>
           )}
 
           {!isLoading && entries.length === 0 && !error && (
-            <ThemedText themeColor="textSecondary">
+            <ThemedText type="caption" themeColor="textSecondary">
               No income logged for {monthLabel} yet. Add your pocket money, internship stipend or
               freelance payments here.
             </ThemedText>
@@ -104,10 +106,10 @@ export default function IncomeScreen() {
 
           {entries.map((entry) => (
             <Pressable key={entry.id} onLongPress={() => handleRemove(entry)}>
-              <ThemedView type="backgroundElement" style={styles.row}>
+              <Card style={styles.row}>
                 <ThemedView style={styles.rowInfo}>
-                  <ThemedText type="smallBold">{INCOME_SOURCE_LABELS[entry.source]}</ThemedText>
-                  <ThemedText themeColor="textSecondary" type="small">
+                  <ThemedText style={styles.rowTitle}>{INCOME_SOURCE_LABELS[entry.source]}</ThemedText>
+                  <ThemedText type="caption" themeColor="textSecondary">
                     {new Date(entry.received_at).toLocaleDateString('en-IN', {
                       day: 'numeric',
                       month: 'short',
@@ -115,15 +117,15 @@ export default function IncomeScreen() {
                     {entry.is_recurring ? ' · repeats monthly' : ''}
                   </ThemedText>
                 </ThemedView>
-                <ThemedText type="smallBold" themeColor="success">
+                <ThemedText style={styles.rowAmount} themeColor="success">
                   {formatINR(Number(entry.amount))}
                 </ThemedText>
-              </ThemedView>
+              </Card>
             </Pressable>
           ))}
 
           {entries.length > 0 && (
-            <ThemedText themeColor="textSecondary" type="small" style={styles.hint}>
+            <ThemedText type="caption" themeColor="textMuted" style={styles.hint}>
               Long-press an entry to remove it.
             </ThemedText>
           )}
@@ -200,12 +202,12 @@ function AddIncomeModal({
       <ThemedView type="background" style={styles.flex}>
         <SafeAreaView style={styles.flex}>
           <View style={styles.modalContent}>
-            <ThemedText type="title" style={styles.modalTitle}>
-              Add income
-            </ThemedText>
+            <ThemedText style={styles.modalTitle}>Add income</ThemedText>
 
             <ThemedView style={styles.fieldGroup}>
-              <ThemedText type="smallBold">Source</ThemedText>
+              <ThemedText type="caption" themeColor="textSecondary" style={styles.fieldLabel}>
+                Source
+              </ThemedText>
               <ChipSelect options={SOURCE_OPTIONS} value={source} onChange={setSource} />
             </ThemedView>
 
@@ -227,8 +229,8 @@ function AddIncomeModal({
 
             <ThemedView style={styles.switchRow}>
               <ThemedView style={styles.switchLabel}>
-                <ThemedText type="smallBold">Repeats monthly</ThemedText>
-                <ThemedText themeColor="textSecondary" type="small">
+                <ThemedText style={styles.switchTitle}>Repeats monthly</ThemedText>
+                <ThemedText type="caption" themeColor="textSecondary">
                   Turn on for steady income like pocket money.
                 </ThemedText>
               </ThemedView>
@@ -240,7 +242,7 @@ function AddIncomeModal({
             </ThemedView>
 
             {error && (
-              <ThemedText themeColor="danger" type="small">
+              <ThemedText themeColor="danger" type="caption">
                 {error}
               </ThemedText>
             )}
@@ -264,44 +266,43 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     alignItems: 'center',
     padding: Spacing.four,
-    paddingBottom: Spacing.two,
+    paddingBottom: Spacing.three,
   },
-  title: { fontSize: 28, lineHeight: 34 },
   addButton: {
     paddingHorizontal: Spacing.three,
-    paddingVertical: Spacing.two,
-    borderRadius: Spacing.two,
+    height: 40,
+    borderRadius: Radius.small,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
+  addButtonLabel: { color: '#ffffff', fontSize: 15, fontWeight: '700' },
   listContent: {
     paddingHorizontal: Spacing.four,
     paddingBottom: Spacing.six,
-    gap: Spacing.two,
+    gap: Spacing.two + 2,
   },
   totalCard: {
-    borderRadius: Spacing.three,
-    padding: Spacing.three,
     gap: Spacing.half,
-    marginBottom: Spacing.two,
+    marginBottom: Spacing.one,
   },
-  totalValue: { fontSize: 28, lineHeight: 34 },
   averageCard: {
-    borderRadius: Spacing.three,
-    padding: Spacing.three,
     gap: Spacing.half,
-    marginBottom: Spacing.two,
+    marginBottom: Spacing.one,
   },
+  averageValue: { fontSize: 20, lineHeight: 26, fontWeight: '700' },
   row: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    padding: Spacing.three,
-    borderRadius: Spacing.three,
   },
   rowInfo: { gap: 2 },
-  hint: { marginTop: Spacing.two, textAlign: 'center' },
+  rowTitle: { fontSize: 15, fontWeight: '600' },
+  rowAmount: { fontSize: 15, fontWeight: '700' },
+  hint: { marginTop: Spacing.one, textAlign: 'center' },
   modalContent: { flex: 1, padding: Spacing.four, gap: Spacing.three },
-  modalTitle: { fontSize: 24, lineHeight: 30, marginBottom: Spacing.two },
+  modalTitle: { fontSize: 22, lineHeight: 28, fontWeight: '700', marginBottom: Spacing.one },
   fieldGroup: { gap: Spacing.two },
+  fieldLabel: { fontWeight: '600' },
   switchRow: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -309,5 +310,6 @@ const styles = StyleSheet.create({
     gap: Spacing.three,
   },
   switchLabel: { flex: 1, gap: 2 },
+  switchTitle: { fontSize: 15, fontWeight: '600' },
   modalActions: { flexDirection: 'row', gap: Spacing.three, marginTop: Spacing.three },
 });

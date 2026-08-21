@@ -1,7 +1,7 @@
 import { ActivityIndicator, Pressable, StyleSheet, type ViewStyle } from 'react-native';
 
 import { ThemedText } from '@/components/themed-text';
-import { Spacing } from '@/constants/theme';
+import { Radius, Spacing } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
 
 interface ButtonProps {
@@ -22,24 +22,28 @@ export function Button({ title, onPress, variant = 'primary', isLoading, disable
       ? theme.primary
       : variant === 'danger'
         ? theme.danger
-        : theme.backgroundElement;
+        : theme.backgroundSelected;
   const textColor = variant === 'secondary' ? theme.text : '#ffffff';
 
   return (
     <Pressable
       onPress={onPress}
       disabled={isDisabled}
+      // A slight shrink on press reads as a physical button rather than a
+      // rectangle that merely dims.
       style={({ pressed }) => [
         styles.button,
-        { backgroundColor, opacity: isDisabled ? 0.6 : pressed ? 0.85 : 1 },
+        {
+          backgroundColor,
+          opacity: isDisabled ? 0.5 : pressed ? 0.9 : 1,
+          transform: [{ scale: pressed && !isDisabled ? 0.985 : 1 }],
+        },
         style,
       ]}>
       {isLoading ? (
         <ActivityIndicator color={textColor} />
       ) : (
-        <ThemedText type="smallBold" style={{ color: textColor }}>
-          {title}
-        </ThemedText>
+        <ThemedText style={[styles.label, { color: textColor }]}>{title}</ThemedText>
       )}
     </Pressable>
   );
@@ -47,9 +51,17 @@ export function Button({ title, onPress, variant = 'primary', isLoading, disable
 
 const styles = StyleSheet.create({
   button: {
-    borderRadius: Spacing.two,
-    paddingVertical: Spacing.three,
+    borderRadius: Radius.small,
+    paddingVertical: Spacing.three - 2,
+    paddingHorizontal: Spacing.three,
     alignItems: 'center',
     justifyContent: 'center',
+    minHeight: 48,
+  },
+  label: {
+    fontSize: 15,
+    lineHeight: 20,
+    fontWeight: '600',
+    letterSpacing: -0.1,
   },
 });
