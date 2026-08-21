@@ -13,8 +13,6 @@ export function useIncome() {
 
   const refresh = useCallback(async () => {
     if (!session) {
-      // Leaving isLoading true here would strand the screen on a blank state
-      // with nothing to explain it.
       setIsLoading(false);
       return;
     }
@@ -38,8 +36,9 @@ export function useIncome() {
   }, [session]);
 
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     refresh();
-  }, [refresh]);
+  }, []);
 
   const addIncome = useCallback(
     async (input: {

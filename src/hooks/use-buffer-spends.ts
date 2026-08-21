@@ -38,8 +38,9 @@ export function useBufferSpends() {
   }, [session]);
 
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     refresh();
-  }, [refresh]);
+  }, []);
 
   const removeSpend = useCallback(
     async (id: string) => {

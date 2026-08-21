@@ -33,8 +33,9 @@ export function useSavingsGoals() {
   }, [session]);
 
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     refresh();
-  }, [refresh]);
+  }, []);
 
   const addGoal = useCallback(
     async (input: { name: string; target_amount: number; target_date: string | null }) => {

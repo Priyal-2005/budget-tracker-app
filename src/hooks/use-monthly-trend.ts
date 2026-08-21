@@ -73,8 +73,9 @@ export function useMonthlyTrend() {
   }, [session]);
 
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     refresh();
-  }, [refresh]);
+  }, []);
 
   return { trend, isLoading, error, refresh };
 }

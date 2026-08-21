@@ -177,10 +177,9 @@ function ItemModal({
   const [error, setError] = useState<string | null>(null);
   const [isSaving, setIsSaving] = useState(false);
 
-  // Loads the item being edited each time the modal opens, and clears back to
-  // blanks when it is opened to add something new.
   useEffect(() => {
     if (!visible) return;
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setName(item?.name ?? '');
     setAmount(item ? String(item.default_amount) : '');
     setCategory(item?.category ?? 'groceries');

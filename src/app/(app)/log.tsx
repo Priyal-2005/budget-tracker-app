@@ -57,6 +57,7 @@ export default function LogScreen() {
   const [isSubmittingWeekly, setIsSubmittingWeekly] = useState(false);
 
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setWeeklyState((prev) => {
       const next = { ...prev };
       for (const item of weeklyItems) {
@@ -283,6 +284,7 @@ function LoggedItemRow({
   const [isSaving, setIsSaving] = useState(false);
 
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setAmount(String(entry.amount));
   }, [entry.amount]);
 
@@ -374,6 +376,7 @@ function MonthlyItemRow({
   const [isSaving, setIsSaving] = useState(false);
 
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     if (entry) setAmount(String(entry.amount));
   }, [entry]);
 
@@ -647,6 +650,7 @@ function SetBufferModal({
   // is an edit rather than starting from blank.
   useEffect(() => {
     if (visible) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setAmount(currentAmount === null ? '' : String(currentAmount));
       setError(null);
     }

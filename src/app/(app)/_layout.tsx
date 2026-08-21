@@ -8,9 +8,11 @@ import { useTheme } from '@/hooks/use-theme';
 
 // Filled when active, outline when not — the usual iOS/Android tab convention.
 function tabIcon(active: IoniconName, inactive: IoniconName) {
-  return ({ color, focused, size }: { color: ColorValue; focused: boolean; size: number }) => (
+  const Icon = ({ color, focused, size }: { color: ColorValue; focused: boolean; size: number }) => (
     <Ionicons name={focused ? active : inactive} size={size} color={color as string} />
   );
+  Icon.displayName = 'TabIcon';
+  return Icon;
 }
 
 export default function AppTabsLayout() {

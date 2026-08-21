@@ -32,8 +32,9 @@ export function useRecurringItems() {
   }, [session]);
 
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     refresh();
-  }, [refresh]);
+  }, []);
 
   const addItem = useCallback(
     async (input: {

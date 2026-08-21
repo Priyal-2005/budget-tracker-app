@@ -18,8 +18,6 @@ export default function RootLayout() {
   );
 }
 
-// Sits inside ThemeProvider so navigation chrome follows the chosen theme too,
-// not just the screens.
 function ThemedApp() {
   const { scheme } = useThemePreference();
 
@@ -31,6 +29,7 @@ function ThemedApp() {
     </NavigationThemeProvider>
   );
 }
+ThemedApp.displayName = 'ThemedApp';
 
 function RootNavigator() {
   const { session, isLoading } = useAuth();
@@ -57,3 +56,4 @@ function RootNavigator() {
     </Stack>
   );
 }
+RootNavigator.displayName = 'RootNavigator';

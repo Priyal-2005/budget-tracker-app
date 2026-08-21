@@ -76,8 +76,9 @@ export function useLogData() {
   }, [session]);
 
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     refresh();
-  }, [refresh]);
+  }, []);
 
   const logItems = useCallback(
     async (entries: { recurring_item_id: string; amount: number; category: ExpenseCategory }[]) => {

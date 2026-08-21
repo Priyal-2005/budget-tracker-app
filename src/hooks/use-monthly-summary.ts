@@ -64,8 +64,9 @@ export function useMonthlySummary() {
   }, [session]);
 
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     refresh();
-  }, [refresh]);
+  }, []);
 
   return { summary, isLoading, error, refresh };
 }

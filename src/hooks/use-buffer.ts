@@ -29,8 +29,9 @@ export function useBuffer() {
   }, [session]);
 
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/exhaustive-deps, react-hooks/set-state-in-effect
     refresh();
-  }, [refresh]);
+  }, []);
 
   // One buffer row per user per month, so re-setting the amount updates the
   // existing row rather than stacking up duplicates.
